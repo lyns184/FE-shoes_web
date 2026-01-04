@@ -58,7 +58,7 @@ const AdminSidebar = () => {
             </button>
         </figure>
 
-        <nav className='w-full h-full flex flex-col items-center gap-4 mt-6 overflow-visible'>
+        <nav className='flex-1 w-full flex flex-col items-center gap-4 mt-6 overflow-visible'>
             {navItems.map((item) => {
                 const path = item.label === 'Dashboard' ? '/admin' : `/admin/${item.label.toLowerCase()}`;
                 return (
@@ -67,10 +67,10 @@ const AdminSidebar = () => {
                             <span className={`rounded-md flex items-center justify-center bg-white group-hover:bg-[#396254] shrink-0 transition-all duration-150 ${collapsed ? 'w-8 h-8' : 'w-10 h-10'}`}>
                                 {item.icon}
                             </span>
-                            <span className="font-medium whitespace-nowrap">{item.label}</span>
+                            <span className="font-medium whitespace-nowrap text-[28px] leading-none">{item.label}</span>
                         </button>
                         {collapsed && (
-                            <span className="absolute left-full top-1/2 -translate-y-1/2 ml-4 whitespace-nowrap px-3 py-2 rounded bg-[#396254] text-white text-sm font-medium shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none z-50">
+                            <span className="absolute left-full top-1/2 -translate-y-1/2 ml-4 whitespace-nowrap px-3 py-2 rounded bg-[#396254] text-white text-[28px] leading-none font-medium shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none z-50">
                                 {item.label}
                             </span>
                         )}
@@ -78,6 +78,23 @@ const AdminSidebar = () => {
                 );
             })}
         </nav>
+
+        <div className="w-full pb-6 px-3 flex justify-center">
+            <button
+                type="button"
+                onClick={() => navigate('/')}
+                className={`group cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg text-white bg-[#2f4f45] hover:bg-white hover:text-[#2f4f45] transition-colors duration-150 ${collapsed ? 'w-16 justify-center' : 'w-11/12 justify-start'}`}
+            >
+                <span className={`flex items-center justify-center shrink-0 transition-all duration-150 ${collapsed ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white group-hover:text-[#2f4f45]">
+                        <path d="M9 4H5C4.46957 4 3.96086 4.21071 3.58579 4.58579C3.21071 4.96086 3 5.46957 3 6V18C3 18.5304 3.21071 19.0391 3.58579 19.4142C3.96086 19.7893 4.46957 20 5 20H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M16 16L21 12L16 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                </span>
+                {!collapsed && <span className="font-medium whitespace-nowrap text-[28px] leading-none">Logout</span>}
+            </button>
+        </div>
     </aside>;
 }
 
