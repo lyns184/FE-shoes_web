@@ -2,9 +2,8 @@ import { useState } from 'react';
 import logoImg from '../../assets/logo2.png';
 import { useNavigate } from 'react-router-dom';
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ collapsed, setCollapsed }: { collapsed: boolean, setCollapsed: (value: boolean) => void }) => {
     const navigate = useNavigate();
-    const [collapsed, setCollapsed] = useState(false);
     const navItems = [ {
         label: 'Dashboard',
         icon: (
@@ -48,7 +47,7 @@ const AdminSidebar = () => {
         }
     ];
 
-    return <aside className={`relative flex flex-col ${collapsed ? 'w-20' : 'w-87'} h-screen bg-[#396254] transition-all duration-200`}>
+    return <aside className={`fixed left-0 top-0 flex flex-col ${collapsed ? 'w-20' : 'w-87'} h-screen bg-[#396254] transition-all duration-200 z-50`}>
         <figure className="w-full flex items-center justify-end cursor-default h-27 border-b-2 border-[#D0CFCF] px-3">
             {!collapsed && <img onClick={() => navigate('/')} src={logoImg} alt="Logo" className="h-full object-contain cursor-pointer" />}
             <button aria-label="Toggle sidebar" onClick={(e) => { e.stopPropagation(); setCollapsed(prev => !prev); }} className="w-8 h-8 cursor-pointer flex items-center justify-center">
