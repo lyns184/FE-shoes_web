@@ -32,6 +32,7 @@ const VariantsForm = ({
                 <label className="block text-base font-medium text-neutral-900 mb-3">Product Images</label>
                 <label className="w-full border-2 border-dashed border-neutral-300 rounded-lg p-10 text-center cursor-pointer hover:border-neutral-400 transition-colors flex flex-col items-center justify-center gap-2">
                     <input
+                        key={uploadedImages.length}
                         type="file"
                         multiple
                         accept="image/*"
@@ -95,11 +96,16 @@ const VariantsForm = ({
                     <div className="flex flex-wrap gap-2">
                         {selectedColors.map((colorName) => {
                             const color = availableColors.find(c => c.name === colorName);
+                            const isWhite = color?.hex === '#FFFFFF';
                             return (
                                 <div
                                     key={colorName}
-                                    className="px-4 py-2 rounded-full text-white font-medium text-sm flex items-center gap-2"
-                                    style={{ backgroundColor: color?.hex }}
+                                    className={`px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 ${
+                                        isWhite
+                                            ? 'border border-neutral-300 text-neutral-900 bg-white'
+                                            : 'text-white'
+                                    }`}
+                                    style={!isWhite ? { backgroundColor: color?.hex } : {}}
                                 >
                                     {colorName}
                                 </div>

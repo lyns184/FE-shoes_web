@@ -100,7 +100,7 @@ const ProductFrom = ({
     setUploadedImages(images);
     setSelectedColorsLocal(selectedColors);
     setSelectedSizesLocal(selectedSizes);
-  }, [productName, brand, price, stock, category, description, images, selectedColors, selectedSizes]);
+  }, [productName, brand, price, stock, category, description, productId]);
 
   const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'selectedColors' | 'selectedSizes'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
