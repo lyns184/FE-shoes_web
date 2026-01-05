@@ -52,7 +52,7 @@ const VariantsForm = ({
                             {uploadedImages.map((image, index) => (
                                 <div
                                     key={index}
-                                    className="relative w-48 h-48 rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden flex-shrink-0"
+                                    className="relative w-48 h-48 rounded-lg border border-neutral-200 bg-neutral-50 overflow-hidden shrink-0"
                                 >
                                     <img src={image} alt={`Preview ${index}`} className="w-full h-full object-cover" />
                                     <button

@@ -2,14 +2,28 @@ import { useMemo, useState } from 'react';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import ProductForm, { type ProductFormData } from '../../../../components/Form/ProductForm';
 
+type Product = {
+    id: number;
+    image: string;
+    name: string;
+    brand: string;
+    category: string;
+    colors: { label: string; hex: string }[];
+    sizes: number[];
+    price: number;
+    stock: number;
+    status: 'Active' | 'Inactive';
+};
+
 const AdminProducts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [deleteProduct, setDeleteProduct] = useState<{ name: string } | null>(null);
     const [showProductForm, setShowProductForm] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-    const products = useMemo(() => ([
+    const products = useMemo<Product[]>(() => ([
         {
             id: 1,
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
@@ -17,8 +31,8 @@ const AdminProducts = () => {
             brand: 'Nike',
             category: 'Trending',
             colors: [
-                { label: 'Triple White', hex: '#ffffff' },
-                { label: 'Infrared', hex: '#ef4a3c' }
+                { label: 'White', hex: '#FFFFFF' },
+                { label: 'Red', hex: '#EF4444' }
             ],
             sizes: [38, 39, 40, 41, 42],
             price: 150,
@@ -32,8 +46,8 @@ const AdminProducts = () => {
             brand: 'Adidas',
             category: 'Sale',
             colors: [
-                { label: 'Core Black', hex: '#1f1f1f' },
-                { label: 'Cloud White', hex: '#f8f8f8' }
+                { label: 'Black', hex: '#000000' },
+                { label: 'White', hex: '#FFFFFF' }
             ],
             sizes: [39, 40, 41, 42, 43, 44],
             price: 180,
@@ -47,8 +61,8 @@ const AdminProducts = () => {
             brand: 'New Balance',
             category: 'Popular',
             colors: [
-                { label: 'White Navy', hex: '#f7f7f5' },
-                { label: 'Green Gum', hex: '#0f5132' }
+                { label: 'White', hex: '#FFFFFF' },
+                { label: 'Green', hex: '#22C55E' }
             ],
             sizes: [38, 39, 40, 41, 42, 43],
             price: 120,
@@ -62,8 +76,8 @@ const AdminProducts = () => {
             brand: 'Converse',
             category: 'New',
             colors: [
-                { label: 'Parchment', hex: '#f3e9da' },
-                { label: 'Black', hex: '#111111' }
+                { label: 'Brown', hex: '#92400E' },
+                { label: 'Black', hex: '#000000' }
             ],
             sizes: [37, 38, 39, 40, 41, 42],
             price: 85,
@@ -77,8 +91,8 @@ const AdminProducts = () => {
             brand: 'Puma',
             category: 'Trending',
             colors: [
-                { label: 'Forest Night', hex: '#395348' },
-                { label: 'Royal Blue', hex: '#235db3' }
+                { label: 'Green', hex: '#22C55E' },
+                { label: 'Blue', hex: '#3B82F6' }
             ],
             sizes: [38, 39, 40, 41, 42, 43, 44],
             price: 75,
@@ -92,8 +106,38 @@ const AdminProducts = () => {
             brand: 'ASICS',
             category: 'Trending',
             colors: [
-                { label: 'Midnight', hex: '#0c1626' },
-                { label: 'Glacier', hex: '#dce4ed' }
+                { label: 'Black', hex: '#000000' },
+                { label: 'Gray', hex: '#6B7280' }
+            ],
+            sizes: [39, 40, 41, 42, 43, 44],
+            price: 160,
+            stock: 21,
+            status: 'Active'
+        },
+        {
+            id: 5,
+            image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
+            name: 'Suede Classic',
+            brand: 'Puma',
+            category: 'Trending',
+            colors: [
+                { label: 'Green', hex: '#22C55E' },
+                { label: 'Blue', hex: '#3B82F6' }
+            ],
+            sizes: [38, 39, 40, 41, 42, 43, 44],
+            price: 75,
+            stock: 52,
+            status: 'Active'
+        },
+        {
+            id: 6,
+            image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
+            name: 'Gel-Kayano 30',
+            brand: 'ASICS',
+            category: 'Trending',
+            colors: [
+                { label: 'Black', hex: '#000000' },
+                { label: 'Gray', hex: '#6B7280' }
             ],
             sizes: [39, 40, 41, 42, 43, 44],
             price: 160,
@@ -131,21 +175,35 @@ const AdminProducts = () => {
         return pages;
     };
 
-    if (showProductForm) {
-        return (
-            <ProductForm
-                onCancel={() => setShowProductForm(false)}
-                onSubmit={(data: ProductFormData) => {
-                    console.log('Product form submitted:', data);
-                    setShowProductForm(false);
-                }}
-            />
-        );
-    }
-
     return <>
         <AdminHeader title="Products" subtitle='Manage your product inventory' />
         <section className="px-9 py-11">
+            {showProductForm ? (
+                <div className="max-w-5xl mx-auto">
+                    <ProductForm
+                        mode={editingProduct ? 'edit' : 'create'}
+                        productId={editingProduct?.id}
+                        productName={editingProduct?.name}
+                        brand={editingProduct?.brand}
+                        price={editingProduct?.price}
+                        stock={editingProduct?.stock}
+                        category={editingProduct?.category}
+                        images={editingProduct ? [editingProduct.image] : []}
+                        selectedColors={editingProduct ? editingProduct.colors.map(c => c.label) : undefined}
+                        selectedSizes={editingProduct ? editingProduct.sizes.map(size => size.toString()) : undefined}
+                        onCancel={() => {
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                        onSubmit={(data: ProductFormData) => {
+                            console.log('Product form submitted:', data);
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                    />
+                </div>
+            ) : (
+            <>
             <div className="flex flex-wrap items-center gap-6 justify-between">
                 <div className="flex-1 min-w-[320px] max-w-3xl">
                     <label className="flex items-center gap-3 bg-white border border-neutral-300 rounded-xl px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500 transition">
@@ -274,6 +332,8 @@ const AdminProducts = () => {
                                                             type="button"
                                                             onClick={() => {
                                                                 setOpenMenu(null);
+                                                                setEditingProduct(product);
+                                                                setShowProductForm(true);
                                                             }}
                                                             className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left cursor-pointer"
                                                         >
@@ -352,6 +412,8 @@ const AdminProducts = () => {
                     </svg>
                 </button>
             </div>
+            </>
+            )}
         </section>
 
         {deleteProduct && (

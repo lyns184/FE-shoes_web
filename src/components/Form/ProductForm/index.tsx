@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import BasicInfoForm from './BasicInfoForm';
 import VariantsForm from './VariantsForm';
 
 export interface ProductFormProps {
+  mode?: 'create' | 'edit';
+  productId?: string | number;
   productName?: string;
   brand?: string;
   price?: number;
@@ -47,6 +49,8 @@ const AVAILABLE_COLORS = [
 const AVAILABLE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43'];
 
 const ProductFrom = ({
+  mode = 'create',
+  productId,
   productName = '',
   brand = '',
   price = 0.0,
@@ -60,6 +64,7 @@ const ProductFrom = ({
   onCancel,
 }: ProductFormProps) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'variants'>('basic');
+  const isEditMode = mode === 'edit';
 
   // Basic Info state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -78,6 +83,24 @@ const ProductFrom = ({
   const [uploadedImages, setUploadedImages] = useState<string[]>(images);
   const [selectedColorsLocal, setSelectedColorsLocal] = useState<string[]>(selectedColors);
   const [selectedSizesLocal, setSelectedSizesLocal] = useState<string[]>(selectedSizes);
+
+  // Keep form state in sync when initial values change (e.g., switching between products to edit)
+  useEffect(() => {
+    setFormData({
+      productName,
+      brand,
+      price,
+      stock,
+      category,
+      description,
+      images,
+      selectedColors,
+      selectedSizes,
+    });
+    setUploadedImages(images);
+    setSelectedColorsLocal(selectedColors);
+    setSelectedSizesLocal(selectedSizes);
+  }, [productName, brand, price, stock, category, description, images, selectedColors, selectedSizes]);
 
   const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'selectedColors' | 'selectedSizes'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -126,11 +149,11 @@ const ProductFrom = ({
   };
 
   return (
-    <div className="w-full min-h-screen bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm">
+    <div className="w-full bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900 mb-1">Add New Product</h1>
-          <p className="text-neutral-500 text-base">Create a new product.</p>
+          <h1 className="text-3xl font-bold text-neutral-900 mb-1">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
+          <p className="text-neutral-500 text-base">{isEditMode ? '' : 'Create a new product.'}</p>
         </div>
         <div className="w-10" />
       </div>
@@ -192,7 +215,7 @@ const ProductFrom = ({
           onClick={handleSubmit}
           className="px-6 py-2.5 bg-[#396254] text-white rounded-lg font-medium hover:bg-[#2d4a3f] transition-colors cursor-pointer"
         >
-          Add Product
+          {isEditMode ? 'Save Changes' : 'Add Product'}
         </button>
       </div>
     </div>
