@@ -115,7 +115,7 @@ const AdminProducts = () => {
             status: 'Active'
         },
         {
-            id: 5,
+            id: 7,
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Suede Classic',
             brand: 'Puma',
@@ -130,7 +130,7 @@ const AdminProducts = () => {
             status: 'Active'
         },
         {
-            id: 6,
+            id: 8,
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
@@ -146,12 +146,23 @@ const AdminProducts = () => {
         },
     ]), []);
 
-    const totalProducts = products.length;
+    // Filter products based on search term
+    const filteredProducts = useMemo(() => {
+        return searchTerm.trim()
+            ? products.filter(product =>
+                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            : products;
+    }, [searchTerm, products]);
+
+    const totalProducts = filteredProducts.length;
     const productsPerPage = 6;
     const totalPages = Math.ceil(totalProducts / productsPerPage);
     const startIndex = (currentPage - 1) * productsPerPage;
     const endIndex = startIndex + productsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
     const getPaginationPages = () => {
         const pages: (number | string)[] = [];
@@ -213,13 +224,19 @@ const AdminProducts = () => {
                         </svg>
                         <input
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder={`Search ${totalProducts} products`}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder={`Search ${filteredProducts.length} products`}
                             className="flex-1 bg-transparent outline-none text-neutral-800 placeholder:text-neutral-500 text-base"
                         />
                         {searchTerm && <button
                             type="button"
-                            onClick={() => setSearchTerm('')}
+                            onClick={() => {
+                                setSearchTerm('');
+                                setCurrentPage(1);
+                            }}
                             className="text-neutral-500 cursor-pointer hover:text-neutral-800 transition"
                             aria-label="Clear search"
                         >
