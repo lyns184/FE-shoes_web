@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import AdminHeader from '../../../../components/common/AdminHeader';
+import ProductForm, { type ProductFormData } from '../../../../components/Form/ProductForm';
 
 const AdminProducts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [deleteProduct, setDeleteProduct] = useState<{ name: string } | null>(null);
+    const [showProductForm, setShowProductForm] = useState(false);
 
     const products = useMemo(() => ([
         {
@@ -13,6 +15,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Air Max 90',
             brand: 'Nike',
+            category: 'Trending',
             colors: [
                 { label: 'Triple White', hex: '#ffffff' },
                 { label: 'Infrared', hex: '#ef4a3c' }
@@ -27,6 +30,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Ultraboost Light',
             brand: 'Adidas',
+            category: 'Sale',
             colors: [
                 { label: 'Core Black', hex: '#1f1f1f' },
                 { label: 'Cloud White', hex: '#f8f8f8' }
@@ -41,6 +45,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: '550',
             brand: 'New Balance',
+            category: 'Popular',
             colors: [
                 { label: 'White Navy', hex: '#f7f7f5' },
                 { label: 'Green Gum', hex: '#0f5132' }
@@ -55,6 +60,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Chuck 70 High',
             brand: 'Converse',
+            category: 'New',
             colors: [
                 { label: 'Parchment', hex: '#f3e9da' },
                 { label: 'Black', hex: '#111111' }
@@ -69,6 +75,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Suede Classic',
             brand: 'Puma',
+            category: 'Trending',
             colors: [
                 { label: 'Forest Night', hex: '#395348' },
                 { label: 'Royal Blue', hex: '#235db3' }
@@ -83,6 +90,7 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
+            category: 'Trending',
             colors: [
                 { label: 'Midnight', hex: '#0c1626' },
                 { label: 'Glacier', hex: '#dce4ed' }
@@ -122,6 +130,18 @@ const AdminProducts = () => {
         }
         return pages;
     };
+
+    if (showProductForm) {
+        return (
+            <ProductForm
+                onCancel={() => setShowProductForm(false)}
+                onSubmit={(data: ProductFormData) => {
+                    console.log('Product form submitted:', data);
+                    setShowProductForm(false);
+                }}
+            />
+        );
+    }
 
     return <>
         <AdminHeader title="Products" subtitle='Manage your product inventory' />
@@ -169,7 +189,8 @@ const AdminProducts = () => {
                 <div className="flex items-center">
                     <button
                         type="button"
-                        className="bg-[#396254] hover:bg-[#2f4f45] text-white text-lg font-semibold px-6 py-4 rounded-2xl shadow-sm transition-colors duration-150 flex items-center gap-3"
+                        onClick={() => setShowProductForm(true)}
+                        className="bg-[#396254] hover:bg-[#2f4f45] text-white text-lg font-semibold px-6 py-4 rounded-2xl shadow-sm transition-colors duration-150 flex items-center gap-3 cursor-pointer"
                     >
                         <span className="text-xl leading-none">+</span>
                         <span>Add Product</span>
@@ -184,6 +205,7 @@ const AdminProducts = () => {
                             <tr className="text-left text-neutral-500 text-lg font-semibold border-b border-neutral-200">
                                 <th className="py-4 px-6">Product</th>
                                 <th className="py-4 px-6">Brand</th>
+                                <th className="py-4 px-6">Category</th>
                                 <th className="py-4 px-6">Colors</th>
                                 <th className="py-4 px-6">Sizes</th>
                                 <th className="py-4 px-6">Price</th>
@@ -204,6 +226,9 @@ const AdminProducts = () => {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 font-medium text-neutral-800">{product.brand}</td>
+                                        <td className="py-4 px-6">
+                                            <span className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded-full inline-flex text-sm font-medium">{product.category}</span>
+                                        </td>
                                         <td className="py-4 px-6">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {product.colors.map((color) => (
@@ -233,7 +258,7 @@ const AdminProducts = () => {
                                                 <button 
                                                     type="button" 
                                                     onClick={() => setOpenMenu(openMenu === product.name ? null : product.name)}
-                                                    className="cursor-pointer hover:bg-neutral-100 p-2 rounded-lg transition-colors" 
+                                                    className="hover:bg-neutral-100 p-2 rounded-lg transition-colors cursor-pointer" 
                                                     aria-label="More options"
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -250,7 +275,7 @@ const AdminProducts = () => {
                                                             onClick={() => {
                                                                 setOpenMenu(null);
                                                             }}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left"
+                                                            className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left cursor-pointer"
                                                         >
                                                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                 <path d="M4.5 13.5H3V4.5H4.5M8.25 3V1.5H5.25V3M13.5 7.5H12V3H13.5M2.25 15.75H15.75V14.25H2.25M3 13.5H15V4.5H3V13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -287,7 +312,7 @@ const AdminProducts = () => {
                 <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="flex cursor-pointer items-center gap-1 px-3 py-2 text-neutral-700 hover:text-neutral-900 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="flex items-center gap-1 px-3 py-2 text-neutral-700 hover:text-neutral-900 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                 >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -304,10 +329,10 @@ const AdminProducts = () => {
                             className={`
                                 px-3 py-2 rounded-lg font-medium transition-all
                                 ${page === currentPage
-                                    ? 'bg-[#396254] text-white'
+                                    ? 'bg-[#396254] text-white cursor-pointer'
                                     : page === '...'
                                     ? 'text-neutral-500 cursor-not-allowed'
-                                    : 'text-neutral-700 hover:bg-neutral-100'
+                                    : 'text-neutral-700 hover:bg-neutral-100 cursor-pointer'
                                 }
                             `}
                         >
@@ -319,7 +344,7 @@ const AdminProducts = () => {
                 <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="flex cursor-pointer items-center gap-1 px-3 py-2 text-neutral-700 hover:text-neutral-900 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="flex items-center gap-1 px-3 py-2 text-neutral-700 hover:text-neutral-900 disabled:text-neutral-400 disabled:cursor-not-allowed transition-colors font-medium cursor-pointer"
                 >
                     Next
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -335,7 +360,7 @@ const AdminProducts = () => {
                     <button
                         type="button"
                         onClick={() => setDeleteProduct(null)}
-                        className="absolute top-6 right-6 cursor-pointer text-neutral-600 hover:text-neutral-900 transition-colors"
+                        className="absolute top-6 right-6 text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
                         aria-label="Close"
                     >
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
