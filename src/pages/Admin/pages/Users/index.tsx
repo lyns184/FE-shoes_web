@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import AdminHeader from '../../../../components/common/AdminHeader';
+import UserForm, { type UserFormData } from '../../../../components/Form/UserForm';
 
 type Role = 'Admin' | 'Customer';
 
@@ -19,6 +20,9 @@ const AdminUser = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [deleteUser, setDeleteUser] = useState<{ id: number; name: string } | null>(null);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const users = useMemo<User[]>(() => ([
     { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1 234 567 890', role: 'Customer', orders: 12, totalSpent: 3450, joined: '2023-06-15' },
@@ -135,6 +139,10 @@ const AdminUser = () => {
           <div className="flex items-center">
             <button
               type="button"
+              onClick={() => {
+                setEditingUser(null);
+                setShowUserForm(true);
+              }}
               className="bg-[#396254] hover:bg-[#2f4f45] text-white text-lg font-semibold px-6 py-4 rounded-2xl shadow-sm transition-colors duration-150 flex items-center gap-3 cursor-pointer"
             >
               <span>+ Add User</span>
@@ -200,7 +208,11 @@ const AdminUser = () => {
                           <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
                             <button
                               type="button"
-                              onClick={() => setOpenMenu(null)}
+                              onClick={() => {
+                                setOpenMenu(null);
+                                setEditingUser(user);
+                                setShowUserForm(true);
+                              }}
                               className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left cursor-pointer"
                             >
                               <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -210,7 +222,10 @@ const AdminUser = () => {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setOpenMenu(null)}
+                              onClick={() => {
+                                setOpenMenu(null);
+                                setDeleteUser({ id: user.id, name: user.name });
+                              }}
                               className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors font-medium text-left cursor-pointer border-t border-neutral-200"
                             >
                               <svg width="21" height="23" viewBox="0 0 21 23" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -274,6 +289,71 @@ const AdminUser = () => {
           </button>
         </div>
       </section>
+
+      {showUserForm && (
+        <UserForm
+          mode={editingUser ? 'edit' : 'create'}
+          title={editingUser ? 'Edit User' : 'Add New User'}
+          description={editingUser ? 'Update user information' : 'Create a new user'}
+          initialValues={editingUser ? {
+            avatar: editingUser.avatar,
+            fullName: editingUser.name,
+            phone: editingUser.phone,
+            email: editingUser.email,
+            role: editingUser.role,
+          } : undefined}
+          onCancel={() => {
+            setShowUserForm(false);
+            setEditingUser(null);
+          }}
+          onSubmit={(data: UserFormData) => {
+            console.log('User form submitted:', data);
+            setShowUserForm(false);
+            setEditingUser(null);
+          }}
+        />
+      )}
+
+      {deleteUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 relative">
+            <button
+              type="button"
+              onClick={() => setDeleteUser(null)}
+              className="absolute top-6 right-6 text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            <div className="p-8">
+              <h2 className="text-3xl font-bold text-neutral-900 mb-4">Delete User?</h2>
+              <p className="text-neutral-700 text-base mb-8">
+                Are you sure you want to delete user <span className="font-bold">"{deleteUser.name}"</span>? This action can't be undone
+              </p>
+
+              <div className="flex gap-4 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDeleteUser(null)}
+                  className="px-6 py-3 border-2 border-neutral-800 text-neutral-800 font-semibold rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteUser(null)}
+                  className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
