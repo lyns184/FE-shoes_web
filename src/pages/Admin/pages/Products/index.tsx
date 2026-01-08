@@ -355,8 +355,8 @@ const AdminProducts = () => {
                                                             }}
                                                             className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left cursor-pointer"
                                                         >
-                                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M4.5 13.5H3V4.5H4.5M8.25 3V1.5H5.25V3M13.5 7.5H12V3H13.5M2.25 15.75H15.75V14.25H2.25M3 13.5H15V4.5H3V13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M10.25 3.37132H3.25C2.71957 3.37132 2.21086 3.58203 1.83579 3.95711C1.46071 4.33218 1.25 4.84089 1.25 5.37132V19.3713C1.25 19.9018 1.46071 20.4105 1.83579 20.7855C2.21086 21.1606 2.71957 21.3713 3.25 21.3713H17.25C17.7804 21.3713 18.2891 21.1606 18.6642 20.7855C19.0393 20.4105 19.25 19.9018 19.25 19.3713V12.3713M17.75 1.87132C18.1478 1.4735 18.6874 1.25 19.25 1.25C19.8126 1.25 20.3522 1.4735 20.75 1.87132C21.1478 2.26915 21.3713 2.80871 21.3713 3.37132C21.3713 3.93393 21.1478 4.4735 20.75 4.87132L11.25 14.3713L7.25 15.3713L8.25 11.3713L17.75 1.87132Z" stroke="#1E1E1E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                                                             </svg>
                                                             Edit
                                                         </button>
@@ -365,12 +365,13 @@ const AdminProducts = () => {
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 e.preventDefault();
+                                                                setOpenMenu(null);
                                                                 setDeleteProduct({ name: product.name });
                                                             }}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors font-medium text-left cursor-pointer"
+                                                            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors font-medium text-left cursor-pointer border-t border-neutral-200"
                                                         >
-                                                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M3 4.5H4.5H15M14.25 4.5V15C14.25 15.3978 14.092 15.7794 13.8107 16.0607C13.5294 16.342 13.1478 16.5 12.75 16.5H5.25C4.85218 16.5 4.47064 16.342 4.18934 16.0607C3.90804 15.7794 3.75 15.3978 3.75 15V4.5M6 4.5V3C6 2.60218 6.15804 2.22064 6.43934 1.93934C6.72064 1.65804 7.10218 1.5 7.5 1.5H10.5C10.8978 1.5 11.2794 1.65804 11.5607 1.93934C11.842 2.22064 12 2.60218 12 3V4.5M7.5 8.25V13.5M10.5 8.25V13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                            <svg width="21" height="23" viewBox="0 0 21 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <path d="M1.25 5.25H3.25M3.25 5.25H19.25M3.25 5.25V19.25C3.25 19.7804 3.46071 20.2891 3.83579 20.6642C4.21086 21.0393 4.71957 21.25 5.25 21.25H15.25C15.7804 21.25 16.2891 21.0393 16.6642 20.6642C17.0393 20.2891 17.25 19.7804 17.25 19.25V5.25M6.25 5.25V3.25C6.25 2.71957 6.46071 2.21086 6.83579 1.83579C7.21086 1.46071 7.71957 1.25 8.25 1.25H12.25C12.7804 1.25 13.2891 1.46071 13.6642 1.83579C14.0393 2.21086 14.25 2.71957 14.25 3.25V5.25M8.25 10.25V16.25M12.25 10.25V16.25" stroke="#EC221F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                                                             </svg>
                                                             Delete
                                                         </button>

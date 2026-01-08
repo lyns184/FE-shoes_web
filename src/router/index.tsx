@@ -13,6 +13,7 @@ import Admin from '../pages/Admin';
 import NotFound from '../pages/NotFound';
 import AdminProducts from '../pages/Admin/pages/Products';
 import AdminOrder from '../pages/Admin/pages/Orders';
+import AdminUser from '../pages/Admin/pages/Users';
 
 NProgress.configure({ 
   showSpinner: false,
@@ -79,6 +80,10 @@ const routes: RouteObject[] = [
       {
         path: 'orders',
         element: <AdminOrder/>
+      },
+      {
+        path: 'users',
+        element: <AdminUser/>
       }
     ],
   },
