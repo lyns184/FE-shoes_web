@@ -13,6 +13,7 @@ export interface ProductFormProps {
   stock?: number;
   category?: string;
   description?: string;
+  status?: 'Active' | 'Inactive';
   images?: string[];
   selectedColors?: string[];
   selectedSizes?: string[];
@@ -27,6 +28,7 @@ export interface ProductFormData {
   stock: number;
   category: string;
   description: string;
+  status: 'Active' | 'Inactive';
   images: string[];
   selectedColors: string[];
   selectedSizes: string[];
@@ -57,6 +59,7 @@ const ProductFrom = ({
   stock = 1,
   category = '',
   description = '',
+  status = 'Active',
   images = [],
   selectedColors = ['Black', 'Red', 'Green'],
   selectedSizes = ['38', '39', '40'],
@@ -74,6 +77,7 @@ const ProductFrom = ({
     stock,
     category,
     description,
+    status,
     images,
     selectedColors,
     selectedSizes,
@@ -93,6 +97,7 @@ const ProductFrom = ({
       stock,
       category,
       description,
+      status,
       images,
       selectedColors,
       selectedSizes,
@@ -100,7 +105,7 @@ const ProductFrom = ({
     setUploadedImages(images);
     setSelectedColorsLocal(selectedColors);
     setSelectedSizesLocal(selectedSizes);
-  }, [productName, brand, price, stock, category, description, productId]);
+  }, [productName, brand, price, stock, category, description, status, productId]);
 
   const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'selectedColors' | 'selectedSizes'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));

@@ -199,6 +199,7 @@ const AdminProducts = () => {
                         price={editingProduct?.price}
                         stock={editingProduct?.stock}
                         category={editingProduct?.category}
+                        status={editingProduct?.status}
                         images={editingProduct ? [editingProduct.image] : []}
                         selectedColors={editingProduct ? editingProduct.colors.map(c => c.label) : undefined}
                         selectedSizes={editingProduct ? editingProduct.sizes.map(size => size.toString()) : undefined}

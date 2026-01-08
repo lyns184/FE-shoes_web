@@ -59,19 +59,33 @@ const BasicInfoForm = ({ formData, onChange }: BasicInfoFormProps) => {
                 </div>
             </div>
 
-            <div>
-                <label className="block text-base font-medium text-neutral-900 mb-3">Category</label>
-                <select
-                    value={formData.category}
-                    onChange={(e) => onChange('category', e.target.value)}
-                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-pointer bg-white"
-                >
-                    <option value="">Category Name</option>
-                    <option value="Trending">Trending</option>
-                    <option value="Sale">Sale</option>
-                    <option value="Popular">Popular</option>
-                    <option value="New">New</option>
-                </select>
+            <div className="grid grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-base font-medium text-neutral-900 mb-3">Category</label>
+                    <select
+                        value={formData.category}
+                        onChange={(e) => onChange('category', e.target.value)}
+                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-pointer bg-white"
+                    >
+                        <option value="">Category Name</option>
+                        <option value="Trending">Trending</option>
+                        <option value="Sale">Sale</option>
+                        <option value="Popular">Popular</option>
+                        <option value="New">New</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-base font-medium text-neutral-900 mb-3">Status</label>
+                    <select
+                        value={formData.status}
+                        onChange={(e) => onChange('status', e.target.value as 'Active' | 'Inactive')}
+                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-pointer bg-white"
+                    >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
             </div>
 
             <div>
