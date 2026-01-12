@@ -159,7 +159,7 @@ const AdminUser = () => {
                   <th className="py-4 px-6">Phone</th>
                   <th className="py-4 px-6">Role</th>
                   <th className="py-4 px-6">Orders</th>
-                  <th className="py-4 px-6">Total Spent</th>
+                  <th className="py-4 px-6 text-right">Total Spent</th>
                   <th className="py-4 px-6">Joined</th>
                   <th className="py-4 px-6"></th>
                 </tr>
@@ -187,7 +187,7 @@ const AdminUser = () => {
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${user.role === 'Admin' ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-200 text-neutral-700'}`}>{user.role.toLowerCase()}</span>
                     </td>
                     <td className="py-4 px-6 text-neutral-800">{user.orders}</td>
-                    <td className="py-4 px-6 font-semibold text-neutral-900">${user.totalSpent.toLocaleString()}</td>
+                    <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(user.totalSpent * 1000).toLocaleString()}₫</td>
                     <td className="py-4 px-6 text-neutral-700">{user.joined}</td>
                     <td className="py-4 px-6">
                       <div className="relative">

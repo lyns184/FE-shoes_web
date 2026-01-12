@@ -146,7 +146,7 @@ const AdminOrder = () => {
                   <th className="py-4 px-6">Order ID</th>
                   <th className="py-4 px-6">Customer</th>
                   <th className="py-4 px-6">Items</th>
-                  <th className="py-4 px-6">Total</th>
+                  <th className="py-4 px-6 text-right">Total</th>
                   <th className="py-4 px-6">Status</th>
                   <th className="py-4 px-6">Date</th>
                   <th className="py-4 px-6"></th>
@@ -163,7 +163,7 @@ const AdminOrder = () => {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-neutral-800">{order.items}</td>
-                    <td className="py-4 px-6 font-semibold text-neutral-900">${order.total.toLocaleString()}</td>
+                    <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(order.total * 1000).toLocaleString()}₫</td>
                     <td className="py-4 px-6">
                       <span className={`${STATUS_STYLES[order.status]} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{order.status}</span>
                     </td>

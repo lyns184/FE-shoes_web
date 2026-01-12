@@ -284,7 +284,7 @@ const AdminProducts = () => {
                                 <th className="py-4 px-6">Category</th>
                                 <th className="py-4 px-6">Colors</th>
                                 <th className="py-4 px-6">Sizes</th>
-                                <th className="py-4 px-6">Price</th>
+                                <th className="py-4 px-6 text-right">Price</th>
                                 <th className="py-4 px-6">Stock</th>
                                 <th className="py-4 px-6">Status</th>
                                 <th className="py-4 px-6"></th>
@@ -324,7 +324,7 @@ const AdminProducts = () => {
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="py-4 px-6 font-semibold text-neutral-900">${product.price}</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(product.price * 1000).toLocaleString()}₫</td>
                                         <td className="py-4 px-6 text-neutral-800">{product.stock}</td>
                                         <td className="py-4 px-6">
                                             <span className={`${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{product.status}</span>
