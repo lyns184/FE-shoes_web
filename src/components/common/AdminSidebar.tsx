@@ -48,9 +48,9 @@ const AdminSidebar = ({ collapsed, setCollapsed }: { collapsed: boolean, setColl
     ];
 
     return <aside className={`fixed left-0 top-0 flex flex-col ${collapsed ? 'w-20' : 'w-87'} h-screen bg-[#396254] transition-all duration-200 z-50`}>
-        <figure className="w-full flex items-center justify-end cursor-default h-27 border-b-2 border-[#D0CFCF] px-3">
-            {!collapsed && <img onClick={() => navigate('/')} src={logoImg} alt="Logo" className="h-full object-contain cursor-pointer" />}
-            <button aria-label="Toggle sidebar" onClick={(e) => { e.stopPropagation(); setCollapsed(prev => !prev); }} className="w-8 h-8 cursor-pointer flex items-center justify-center">
+        <figure className="w-full flex items-center justify-center cursor-default h-20 border-b-2 border-[#D0CFCF] px-3 relative">
+            {!collapsed && <img onClick={() => navigate('/')} src={logoImg} alt="Logo" className="h-3/4 object-contain cursor-pointer" />}
+            <button aria-label="Toggle sidebar" onClick={(e) => { e.stopPropagation(); setCollapsed(prev => !prev); }} className="w-8 h-8 cursor-pointer flex items-center justify-center absolute right-3">
                 <svg width="13" height="20" viewBox="0 0 13 20" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transform transition-transform duration-200 origin-center ${collapsed ? 'rotate-180' : 'rotate-0'}`}>
                     <path d="M4.66667 10L12.3333 17.6667L10 20L0 10L10 4.76837e-07L12.3333 2.33333L4.66667 10Z" fill="#F4F3F1"/>
                 </svg>
