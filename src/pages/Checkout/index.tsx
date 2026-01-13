@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiChevronLeft, FiMinus, FiPlus, FiX } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
+import OrderConfirmedModal from '../../components/common/OrderConfirmedModal';
 import { useCart } from '../../hooks/useCart';
 import { useUser } from '../../hooks/UserContext';
 import { getRelatedProducts } from '../../data/products';
+import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -25,29 +27,83 @@ const infoCards = [
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { items, removeFromCart, updateQuantity, subtotal, buyNowItem, setBuyNowItem, clearCart } = useCart();
-  const { addOrder, updateProfile } = useUser();
+  const { addOrder, profile } = useUser();
   const recommendedProducts = getRelatedProducts(0, 4);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
+  const [addressMode, setAddressMode] = useState<'default' | 'new'>('new'); // Always start with 'new'
+  const showOrderConfirmed = searchParams.get('orderConfirmed') === 'true';
 
-  const [deliveryInfo, setDeliveryInfo] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    note: ''
+  // Check authentication on component mount
+  useEffect(() => {
+    if (!checkAuth()) {
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
+
+  // Remove the problematic useEffect that auto-clears the orderConfirmed param
+
+  const [deliveryInfo, setDeliveryInfo] = useState(() => {
+    if (profile?.defaultShippingAddress) {
+      return {
+        firstName: profile.name,
+        lastName: profile.defaultShippingAddress.postalCode,
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.defaultShippingAddress.address,
+        note: ''
+      };
+    }
+    return {
+      firstName: '',
+      lastName: '', // This will be used for postcode
+      email: '',
+      phone: '',
+      address: '',
+      note: ''
+    };
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setDeliveryInfo(prev => ({ ...prev, [field]: value }));
+  const handleAddressModeChange = (mode: 'default' | 'new') => {
+    setAddressMode(mode);
+    
+    if (mode === 'default' && profile?.defaultShippingAddress) {
+      // Auto-fill with default address
+      setDeliveryInfo({
+        firstName: profile.name,
+        lastName: profile.defaultShippingAddress.postalCode,
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.defaultShippingAddress.address,
+        note: ''
+      });
+    } else if (mode === 'new') {
+      // Clear for manual input
+      setDeliveryInfo({
+        firstName: '',
+        lastName: '', // postcode
+        email: '',
+        phone: '',
+        address: '',
+        note: ''
+      });
+    }
   };
 
   const handlePlaceOrder = () => {
-    // Validate required fields
-    if (!deliveryInfo.firstName || !deliveryInfo.email || !deliveryInfo.phone || !deliveryInfo.address) {
-      alert('Please fill in all required fields');
+    // Validate required fields based on address mode
+    if (addressMode === 'default' && !profile?.defaultShippingAddress) {
+      alert('Please set a default address in your profile or choose to enter new information');
       return;
+    }
+    
+    if (addressMode === 'new') {
+      if (!deliveryInfo.firstName || !deliveryInfo.email || !deliveryInfo.phone || !deliveryInfo.address || !deliveryInfo.lastName) {
+        alert('Please fill in all required delivery information (name, email, phone, address, and postcode)');
+        return;
+      }
     }
 
     // Create order
@@ -58,9 +114,6 @@ export default function Checkout() {
       total
     });
 
-    // Update profile with new shipping address
-    updateProfile(deliveryInfo);
-
     // Clear cart if not buy now
     if (!buyNowItem) {
       clearCart();
@@ -68,8 +121,24 @@ export default function Checkout() {
       setBuyNowItem(null);
     }
 
-    // Redirect to profile history
-    navigate('/profile?tab=history');
+    // Show order confirmed modal via URL param
+    setSearchParams({ orderConfirmed: 'true' });
+  };
+
+  const handleContinueShopping = () => {
+    // Clear orderConfirmed param and navigate to home
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('orderConfirmed');
+    setSearchParams(newParams, { replace: true });
+    navigate('/', { replace: true });
+  };
+
+  const handleViewOrder = () => {
+    // Clear orderConfirmed param and navigate to profile
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('orderConfirmed');
+    setSearchParams(newParams, { replace: true });
+    navigate('/profile?tab=history', { replace: true });
   };
 
   // Use buyNowItem if available, otherwise use cart items
@@ -81,7 +150,20 @@ export default function Checkout() {
   const shippingFee = 0;
   const total = checkoutSubtotal + shippingFee;
 
-  // Redirect to home if no items
+  // Show popup if orderConfirmed param exists, regardless of cart state
+  if (showOrderConfirmed) {
+    return (
+      <MainLayout>
+        <OrderConfirmedModal
+          isOpen={true}
+          onContinueShopping={handleContinueShopping}
+          onViewOrder={handleViewOrder}
+        />
+      </MainLayout>
+    );
+  }
+
+  // Redirect to home if no items AND no order confirmed
   if (checkoutItems.length === 0) {
     return (
       <MainLayout>
@@ -254,58 +336,146 @@ export default function Checkout() {
 
           {/* Right Column - Delivery Information */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">Delivery Information</h3>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={deliveryInfo.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] text-sm"
-                  placeholder="First name*"
-                />
-                <input
-                  type="text"
-                  value={deliveryInfo.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] text-sm"
-                  placeholder="Last name*"
-                />
+            <div className="mb-6">
+              <h3 className="font-semibold text-lg mb-4">Delivery Information</h3>
+              
+              {/* Address Mode Selection */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <button
+                  onClick={() => handleAddressModeChange('default')}
+                  disabled={!profile?.defaultShippingAddress}
+                  className={`p-4 border rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    addressMode === 'default'
+                      ? 'border-[#396254] bg-[#396254]/10 text-[#396254]'
+                      : profile?.defaultShippingAddress
+                      ? 'border-gray-300 hover:border-gray-400'
+                      : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  📍 Use Default Address
+                  {!profile?.defaultShippingAddress && (
+                    <div className="text-xs text-gray-400 mt-1">No default address</div>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleAddressModeChange('new')}
+                  className={`p-4 border rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                    addressMode === 'new'
+                      ? 'border-[#396254] bg-[#396254]/10 text-[#396254]'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  ✏️ Enter New Information
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="email"
-                  value={deliveryInfo.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] text-sm"
-                  placeholder="Email*"
-                />
-                <input
-                  type="tel"
-                  value={deliveryInfo.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] text-sm"
-                  placeholder="Phone number*"
-                />
-              </div>
+              {/* Default Address Display */}
+              {addressMode === 'default' && profile?.defaultShippingAddress && (
+                <div className="border rounded-lg p-4 bg-gray-50 mb-6">
+                  <h4 className="font-medium text-gray-900 mb-2">{profile?.name}</h4>
+                  <p className="text-sm text-gray-600 mb-1">
+                    {profile?.defaultShippingAddress.address}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {profile?.defaultShippingAddress.postalCode}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {profile?.email} • {profile?.phone}
+                  </p>
+                  <span className="inline-block mt-2 px-2 py-1 bg-[#396254] text-white text-xs rounded-full">Default Address</span>
+                </div>
+              )}
 
-              <input
-                type="text"
-                value={deliveryInfo.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] text-sm"
-                placeholder="Address*"
-              />
+              {/* No Default Address Message */}
+              {addressMode === 'default' && !profile?.defaultShippingAddress && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-6">
+                  <p className="text-gray-500 text-sm mb-3">No default address found</p>
+                  <button
+                    onClick={() => navigate('/profile?addAddress=true')}
+                    className="text-[#396254] hover:text-[#2d4d3f] text-sm font-medium cursor-pointer"
+                  >
+                    Go to Profile to add default address
+                  </button>
+                </div>
+              )}
 
-              <textarea
-                rows={4}
-                value={deliveryInfo.note}
-                onChange={(e) => handleInputChange('note', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-[#396254] resize-none text-sm"
-                placeholder="Note"
-              />
+              {/* Manual Entry Form */}
+              {addressMode === 'new' && (
+                <div className="space-y-4 border rounded-lg p-6 bg-gray-50">
+                  <h4 className="font-medium text-gray-900 mb-4">Enter Delivery Information</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      value={deliveryInfo.firstName}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254]"
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={deliveryInfo.phone}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254]"
+                      placeholder="Enter phone number"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                    <input
+                      type="email"
+                      value={deliveryInfo.email}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254]"
+                      placeholder="Enter email address"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
+                    <input
+                      type="text"
+                      value={deliveryInfo.address}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, address: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254]"
+                      placeholder="Enter full address"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Postcode *</label>
+                    <input
+                      type="text"
+                      value={deliveryInfo.lastName}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254]"
+                      placeholder="Enter postcode"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Note (Optional)</label>
+                    <textarea
+                      value={deliveryInfo.note || ''}
+                      onChange={(e) => setDeliveryInfo(prev => ({ ...prev, note: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#396254] resize-none"
+                      placeholder="Enter delivery notes..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Method */}

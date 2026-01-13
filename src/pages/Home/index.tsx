@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../layouts/MainLayout';
 import HeroCarousel from './HeroCarousel';
 import ProductCard from '../../components/card/ProductCard';
@@ -47,6 +48,8 @@ const infoCards = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+
   return (
     <MainLayout>
       <HeroCarousel />
@@ -54,7 +57,12 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8 space-y-12">
         {/* Recommend For You */}
         <section>
-          <SectionHeader title="Recommend For You" showInfo actionText="See All" />
+          <SectionHeader 
+            title="Recommend For You" 
+            showInfo 
+            actionText="See All"
+            onActionClick={() => navigate('/trending')}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {recommendedProducts.map((product, index) => (
               <ProductCard key={index} {...product} />
@@ -64,7 +72,11 @@ export default function Home() {
 
         {/* Popular Brands */}
         <section id="brands">
-          <SectionHeader title="Popular Brands" actionText="See All" />
+          <SectionHeader 
+            title="Popular Brands" 
+            actionText="See All"
+            onActionClick={() => navigate('/brands')}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {brands.map((brand, index) => (
               <BrandCard key={index} {...brand} />
@@ -74,7 +86,11 @@ export default function Home() {
 
         {/* Trending Shoes */}
         <section id="trending">
-          <SectionHeader title="Trending Shoes" actionText="See All" />
+          <SectionHeader 
+            title="Trending Shoes" 
+            actionText="See All"
+            onActionClick={() => navigate('/trending')}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {trendingProducts.map((product, index) => (
               <ProductCard key={index} {...product} />
@@ -84,7 +100,11 @@ export default function Home() {
 
         {/* New Shoes Release */}
         <section id="new">
-          <SectionHeader title="New Shoes Release" actionText="See All" />
+          <SectionHeader 
+            title="New Shoes Release" 
+            actionText="See All"
+            onActionClick={() => navigate('/new')}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {newReleases.map((release) => (
               <ReleaseCard key={release.id} id={release.id} date={release.releaseDate || 'Dec 12'} name={release.name} imageUrl={release.thumbnail} />
@@ -94,7 +114,11 @@ export default function Home() {
 
         {/* Sale Products */}
         <section id="deals">
-          <SectionHeader title="Sale Products" actionText="See All" />
+          <SectionHeader 
+            title="Sale Products" 
+            actionText="See All"
+            onActionClick={() => navigate('/deals')}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {saleProducts.map((product, index) => (
               <ProductCard key={index} {...product} />

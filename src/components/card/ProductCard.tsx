@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { FiHeart } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
 interface ProductCardProps {
@@ -13,6 +15,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ id, name, description, price, originalPrice, thumbnail, badge, freeship }: ProductCardProps) {
   const navigate = useNavigate();
+  const [isFavorite, setIsFavorite] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking the favorite button
@@ -20,10 +23,27 @@ export default function ProductCard({ id, name, description, price, originalPric
     navigate(`/product/${id || 1}`);
   };
 
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsFavorite(!isFavorite);
+  };
+
   return (
     <div onClick={handleClick} className="overflow-hidden group hover:shadow-lg transition-shadow border border-gray-200 rounded-lg bg-white cursor-pointer">
       <div className="relative aspect-square bg-gray-100">
         <img src={thumbnail || '/shoe.png'} alt={name} className="w-full h-full object-contain p-4" />
+        <button
+          onClick={handleFavoriteClick}
+          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:shadow-lg transition-all cursor-pointer"
+        >
+          <FiHeart
+            className={`w-5 h-5 transition-all ${
+              isFavorite 
+                ? 'fill-red-500 stroke-red-500' 
+                : 'stroke-gray-400 hover:stroke-gray-600'
+            }`}
+          />
+        </button>
       </div>
       <div className="p-4">
         <h3 className="font-semibold text-base mb-2 leading-tight">

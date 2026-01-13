@@ -11,6 +11,10 @@ import Search from '../pages/Search';
 import Profile from '../pages/Profile';
 import Admin from '../pages/Admin';
 import NotFound from '../pages/NotFound';
+import Brands from '../pages/Brands';
+import Trending from '../pages/Trending';
+import New from '../pages/New';
+import Deals from '../pages/Deals';
 import AdminProducts from '../pages/Admin/pages/Products';
 import AdminOrder from '../pages/Admin/pages/Orders';
 import AdminUser from '../pages/Admin/pages/Users';
@@ -65,6 +69,22 @@ const routes: RouteObject[] = [
   {
     path: '/search',
     element: <Search />,
+  },
+  {
+    path: '/brands',
+    element: <Brands />,
+  },
+  {
+    path: '/trending',
+    element: <Trending />,
+  },
+  {
+    path: '/new',
+    element: <New />,
+  },
+  {
+    path: '/deals',
+    element: <Deals />,
   },
   {
     path: '/profile',

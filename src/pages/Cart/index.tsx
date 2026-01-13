@@ -5,6 +5,7 @@ import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
 import { useCart } from '../../hooks/useCart';
 import { getRelatedProducts } from '../../data/products';
+import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -151,6 +152,12 @@ export default function Cart() {
               </div>
               <button 
                 onClick={() => {
+                  // Check authentication first
+                  if (!checkAuth()) {
+                    navigate('/login');
+                    return;
+                  }
+                  
                   // Clear buyNowItem when checking out from cart
                   setBuyNowItem(null);
                   navigate('/checkout');

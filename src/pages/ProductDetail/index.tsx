@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiChevronDown, FiChevronUp, FiHeart, FiStar, FiRefreshCw } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronDown, FiChevronUp, FiHeart } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
 import InfoCard from '../../components/card/InfoCard';
 import ProductCard from '../../components/card/ProductCard';
 import { getProductById, getRelatedProducts } from '../../data/products';
 import { useCart } from '../../hooks/useCart';
+import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -36,6 +37,7 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState('Black');
   const [showProductDetails, setShowProductDetails] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   if (!product) {
     return (
@@ -133,16 +135,19 @@ export default function ProductDetail() {
                   <p className="text-sm text-gray-600 mb-1">Buy Now for</p>
                   <p className="text-3xl font-bold">${product.price}</p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FiStar className="w-4 h-4" />
-                  <span>{product.soldCount || 61} Sold in last 3 days</span>
-                </div>
               </div>
 
               <div className="flex gap-3">
                 <button 
                   onClick={() => {
-                    if (product) {
+                    // Check authentication first
+                    if (!checkAuth()) {
+                      navigate('/login');
+                      return;
+                    }
+                    
+                    if (product && !isAddingToCart) {
+                      setIsAddingToCart(true);
                       addToCart({
                         id: product.id,
                         name: product.name,
@@ -154,14 +159,24 @@ export default function ProductDetail() {
                       });
                       // Clear buyNowItem when adding to cart
                       setBuyNowItem(null);
+                      
+                      // Reset button state after a brief moment
+                      setTimeout(() => setIsAddingToCart(false), 300);
                     }
                   }}
-                  className="flex-1 border-2 border-gray-300 hover:bg-gray-50 bg-transparent py-3 rounded-md font-medium cursor-pointer"
+                  disabled={isAddingToCart}
+                  className="flex-1 border-2 border-gray-300 hover:bg-gray-50 bg-transparent py-3 rounded-md font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add To Cart
+                  {isAddingToCart ? 'Adding...' : 'Add To Cart'}
                 </button>
                 <button 
                   onClick={() => {
+                    // Check authentication first
+                    if (!checkAuth()) {
+                      navigate('/login');
+                      return;
+                    }
+                    
                     if (product) {
                       setBuyNowItem({
                         id: product.id,
