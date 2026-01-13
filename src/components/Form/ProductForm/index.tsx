@@ -10,28 +10,30 @@ export interface ProductFormProps {
   productName?: string;
   brand?: string;
   price?: number;
-  stock?: number;
-  category?: string;
+  categories?: string[];
   description?: string;
   status?: 'Active' | 'Inactive';
   images?: string[];
-  selectedColors?: string[];
-  selectedSizes?: string[];
+  variants?: Variant[];
   onSubmit?: (data: ProductFormData) => void;
   onCancel?: () => void;
+}
+
+export interface Variant {
+  color: { label: string; hex: string };
+  size: number;
+  quantity: number;
 }
 
 export interface ProductFormData {
   productName: string;
   brand: string;
   price: number;
-  stock: number;
-  category: string;
+  categories: string[];
   description: string;
   status: 'Active' | 'Inactive';
   images: string[];
-  selectedColors: string[];
-  selectedSizes: string[];
+  variants: Variant[];
 }
 
 const AVAILABLE_COLORS = [
@@ -56,13 +58,11 @@ const ProductFrom = ({
   productName = '',
   brand = '',
   price = 0.0,
-  stock = 1,
-  category = '',
+  categories = [],
   description = '',
   status = 'Active',
   images = [],
-  selectedColors = ['Black', 'Red', 'Green'],
-  selectedSizes = ['38', '39', '40'],
+  variants = [],
   onSubmit,
   onCancel,
 }: ProductFormProps) => {
@@ -74,56 +74,90 @@ const ProductFrom = ({
     productName,
     brand,
     price,
-    stock,
-    category,
+    categories,
     description,
     status,
     images,
-    selectedColors,
-    selectedSizes,
+    variants,
   });
 
   // Variants state
   const [uploadedImages, setUploadedImages] = useState<string[]>(images);
-  const [selectedColorsLocal, setSelectedColorsLocal] = useState<string[]>(selectedColors);
-  const [selectedSizesLocal, setSelectedSizesLocal] = useState<string[]>(selectedSizes);
+  const [selectedColorsLocal, setSelectedColorsLocal] = useState<string[]>(
+    Array.from(new Set(variants.map(v => v.color.label)))
+  );
+  const [selectedSizesLocal, setSelectedSizesLocal] = useState<string[]>(
+    Array.from(new Set(variants.map(v => v.size.toString()))).sort((a, b) => parseInt(a) - parseInt(b))
+  );
+  const [variantsLocal, setVariantsLocal] = useState<Variant[]>(variants);
 
-  // Keep form state in sync when initial values change (e.g., switching between products to edit)
+  // Keep form state in sync only when switching between products (productId) or modes
+  // This prevents resetting the form while user is typing or selecting colors/sizes
   useEffect(() => {
     setFormData({
       productName,
       brand,
       price,
-      stock,
-      category,
+      categories,
       description,
       status,
       images,
-      selectedColors,
-      selectedSizes,
+      variants,
     });
     setUploadedImages(images);
-    setSelectedColorsLocal(selectedColors);
-    setSelectedSizesLocal(selectedSizes);
-  }, [productName, brand, price, stock, category, description, status, productId]);
+    setSelectedColorsLocal(Array.from(new Set(variants.map(v => v.color.label))));
+    setSelectedSizesLocal(Array.from(new Set(variants.map(v => v.size.toString()))).sort((a, b) => parseInt(a) - parseInt(b)));
+    setVariantsLocal(variants);
+  }, [productId, mode]);
 
-  const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'selectedColors' | 'selectedSizes'>, value: any) => {
+  const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'variants'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleColorToggle = (colorName: string) => {
-    setSelectedColorsLocal(prev =>
-      prev.includes(colorName)
-        ? prev.filter(c => c !== colorName)
-        : [...prev, colorName]
-    );
+    const newColors = selectedColorsLocal.includes(colorName)
+      ? selectedColorsLocal.filter(c => c !== colorName)
+      : [...selectedColorsLocal, colorName];
+    setSelectedColorsLocal(newColors);
+    regenerateVariants(newColors, selectedSizesLocal);
   };
 
   const handleSizeToggle = (size: string) => {
-    setSelectedSizesLocal(prev =>
-      prev.includes(size)
-        ? prev.filter(s => s !== size)
-        : [...prev, size]
+    const newSizes = selectedSizesLocal.includes(size)
+      ? selectedSizesLocal.filter(s => s !== size)
+      : [...selectedSizesLocal, size];
+    setSelectedSizesLocal(newSizes);
+    regenerateVariants(selectedColorsLocal, newSizes);
+  };
+
+  const regenerateVariants = (colors: string[], sizes: string[]) => {
+    const newVariants: Variant[] = [];
+    colors.forEach(colorName => {
+      const colorObj = AVAILABLE_COLORS.find(c => c.name === colorName);
+      if (colorObj) {
+        sizes.forEach(size => {
+          const sizeNum = parseInt(size);
+          const existing = variantsLocal.find(
+            v => v.color.label === colorName && v.size === sizeNum
+          );
+          newVariants.push({
+            color: { label: colorObj.name, hex: colorObj.hex },
+            size: sizeNum,
+            quantity: existing?.quantity ?? 0,
+          });
+        });
+      }
+    });
+    setVariantsLocal(newVariants);
+  };
+
+  const handleQuantityChange = (colorLabel: string, size: number, quantity: number) => {
+    setVariantsLocal(prev =>
+      prev.map(v =>
+        v.color.label === colorLabel && v.size === size
+          ? { ...v, quantity }
+          : v
+      )
     );
   };
 
@@ -140,14 +174,19 @@ const ProductFrom = ({
   };
 
   const handleSubmit = () => {
+    if (selectedColorsLocal.length === 0 || selectedSizesLocal.length === 0) {
+      alert('Please select at least one color and one size');
+      return;
+    }
     const finalData: ProductFormData = {
       ...formData,
       images: uploadedImages,
-      selectedColors: selectedColorsLocal,
-      selectedSizes: selectedSizesLocal,
+      variants: variantsLocal,
     };
     onSubmit?.(finalData);
   };
+
+  const isSubmitDisabled = selectedColorsLocal.length === 0 || selectedSizesLocal.length === 0;
 
   const handleCancel = () => {
     onCancel?.();
@@ -205,6 +244,8 @@ const ProductFrom = ({
           availableSizes={AVAILABLE_SIZES}
           selectedSizes={selectedSizesLocal}
           onToggleSize={handleSizeToggle}
+          variants={variantsLocal}
+          onQuantityChange={handleQuantityChange}
         />
       )}
 
@@ -218,7 +259,12 @@ const ProductFrom = ({
         </button>
         <button
           onClick={handleSubmit}
-          className="px-6 py-2.5 bg-[#396254] text-white rounded-lg font-medium hover:bg-[#2d4a3f] transition-colors cursor-pointer"
+          disabled={isSubmitDisabled}
+          className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
+            isSubmitDisabled
+              ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+              : 'bg-[#396254] text-white hover:bg-[#2d4a3f] cursor-pointer'
+          }`}
         >
           {isEditMode ? 'Save Changes' : 'Add Product'}
         </button>

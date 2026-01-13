@@ -3,6 +3,12 @@ interface ColorOption {
     hex: string;
 }
 
+interface Variant {
+    color: { label: string; hex: string };
+    size: number;
+    quantity: number;
+}
+
 interface VariantsFormProps {
     uploadedImages: string[];
     onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -13,6 +19,8 @@ interface VariantsFormProps {
     availableSizes: string[];
     selectedSizes: string[];
     onToggleSize: (size: string) => void;
+    variants: Variant[];
+    onQuantityChange: (colorLabel: string, size: number, quantity: number) => void;
 }
 
 const VariantsForm = ({
@@ -25,6 +33,8 @@ const VariantsForm = ({
     availableSizes,
     selectedSizes,
     onToggleSize,
+    variants,
+    onQuantityChange,
 }: VariantsFormProps) => {
     return (
         <div className="space-y-8">
@@ -146,6 +156,53 @@ const VariantsForm = ({
                     </div>
                 )}
             </div>
+
+            {selectedColors.length > 0 && selectedSizes.length > 0 && (
+                <div>
+                    <label className="block text-base font-medium text-neutral-900 mb-3">Product Variants</label>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-left text-neutral-700 text-base font-semibold border-b border-neutral-200">
+                                    <th className="py-3 px-4">Color</th>
+                                    <th className="py-3 px-4">Size</th>
+                                    <th className="py-3 px-4 text-right">Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-neutral-900 text-base">
+                                {variants.map((variant, index) => (
+                                    <tr key={index} className="border-b border-neutral-200 last:border-b-0 hover:bg-neutral-50 transition-colors">
+                                        <td className="py-4 px-4">
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className="w-5 h-5 rounded-sm border border-neutral-300"
+                                                    style={{ backgroundColor: variant.color.hex }}
+                                                />
+                                                <span className="font-medium">{variant.color.label}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4 font-medium">{variant.size}</td>
+                                        <td className="py-4 px-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="999"
+                                                    value={variant.quantity}
+                                                    onChange={(e) =>
+                                                        onQuantityChange(variant.color.label, variant.size, parseInt(e.target.value) || 0)
+                                                    }
+                                                    className="w-24 px-3 py-2 border border-neutral-300 rounded-lg text-center font-medium focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
