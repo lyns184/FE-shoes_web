@@ -196,31 +196,6 @@ const AdminProducts = () => {
     return <>
         <AdminHeader title="Products" subtitle='Manage your product inventory' />
         <section className="px-9 py-11">
-            {showProductForm ? (
-                <div className="max-w-5xl mx-auto">
-                    <ProductForm
-                        mode={editingProduct ? 'edit' : 'create'}
-                        productId={editingProduct?.id}
-                        productName={editingProduct?.name}
-                        brand={editingProduct?.brand}
-                        price={editingProduct?.price}
-                        categories={editingProduct?.categories}
-                        status={editingProduct?.status}
-                        images={editingProduct ? [editingProduct.image] : []}
-                        variants={editingProduct?.variants}
-                        onCancel={() => {
-                            setShowProductForm(false);
-                            setEditingProduct(null);
-                        }}
-                        onSubmit={(data: ProductFormData) => {
-                            console.log('Product form submitted:', data);
-                            setShowProductForm(false);
-                            setEditingProduct(null);
-                        }}
-                    />
-                </div>
-            ) : (
-            <>
             <div className="flex flex-wrap items-center gap-6 justify-between">
                 <div className="flex-1 min-w-[320px] max-w-3xl">
                     <label className="flex items-center gap-3 bg-white border border-neutral-300 rounded-xl px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500 transition">
@@ -290,6 +265,7 @@ const AdminProducts = () => {
                                 <th className="py-4 px-6">Colors</th>
                                 <th className="py-4 px-6">Sizes</th>
                                 <th className="py-4 px-6 text-right">Price</th>
+                                <th className="py-4 px-6 text-center">Quantity</th>
                                 <th className="py-4 px-6">Status</th>
                                 <th className="py-4 px-6"></th>
                             </tr>
@@ -336,6 +312,7 @@ const AdminProducts = () => {
                                             </div>
                                         </td>
                                         <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(product.price * 1000).toLocaleString()}₫</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-center">{product.variants.reduce((total, v) => total + v.quantity, 0)}</td>
                                         <td className="py-4 px-6">
                                             <span className={`${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{product.status}</span>
                                         </td>
@@ -441,9 +418,34 @@ const AdminProducts = () => {
                     </svg>
                 </button>
             </div>
-            </>
-            )}
         </section>
+
+        {showProductForm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+                <div className="w-full max-w-5xl my-8">
+                    <ProductForm
+                        mode={editingProduct ? 'edit' : 'create'}
+                        productId={editingProduct?.id}
+                        productName={editingProduct?.name}
+                        brand={editingProduct?.brand}
+                        price={editingProduct?.price}
+                        categories={editingProduct?.categories}
+                        status={editingProduct?.status}
+                        images={editingProduct ? [editingProduct.image] : []}
+                        variants={editingProduct?.variants}
+                        onCancel={() => {
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                        onSubmit={(data: ProductFormData) => {
+                            console.log('Product form submitted:', data);
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                    />
+                </div>
+            </div>
+        )}
 
         {deleteProduct && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
