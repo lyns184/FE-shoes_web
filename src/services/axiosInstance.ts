@@ -1,14 +1,10 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
+import { API_CONFIG } from '../config/api.config';
+import { getAccessToken, refreshAccessToken, clearTokens } from './token';
 
 // Tạo axios instance
-const axiosInstance: AxiosInstance = axios.create({
-  baseURL: 'https://backend_test_api.nport.link/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Gửi cookies
-});
+const axiosInstance: AxiosInstance = axios.create(API_CONFIG);
 
 // Flag để tránh lặp vô hạn khi refresh token
 let isRefreshing = false;
@@ -32,12 +28,25 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 // Request Interceptor - Thêm token vào header
 axiosInstance.interceptors.request.use(
   (config: any) => {
-    const token = localStorage.getItem('accessToken');
+    const token = getAccessToken();
     if (token) {
+      const authHeader = `Bearer ${token}`;
+      
+      // Debug logging
+      console.log('🔑 Token info:', {
+        length: token.length,
+        preview: token.substring(0, 20) + '...',
+        hasBearer: token.toLowerCase().includes('bearer'),
+        hasQuotes: token.includes('"'),
+      });
+      console.log('📤 Authorization header:', authHeader.substring(0, 40) + '...');
+      
       config.headers = {
         ...config.headers,
-        Authorization: `Bearer ${token}`,
+        Authorization: authHeader,
       };
+    } else {
+      console.warn('No access token available for request authentication');
     }
     return config;
   },
@@ -74,18 +83,10 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Gọi API refresh token - GET request, gửi refreshToken qua cookies
-        const response = await axios.get('https://backend_test_api.nport.link/api/auth/refresh-token', {
-          withCredentials: true, // Gửi cookies chứa refreshToken
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        // Gọi API refresh token - sử dụng token service
+        const newAccessToken = await refreshAccessToken();
 
-        if (response.data.success && response.data.accessToken) {
-          const newAccessToken = response.data.accessToken;
-          localStorage.setItem('accessToken', newAccessToken);
-
+        if (newAccessToken) {
           // Cập nhật token cho request hiện tại
           originalRequest.headers = {
             ...originalRequest.headers,
@@ -97,16 +98,13 @@ axiosInstance.interceptors.response.use(
 
           // Retry request gốc
           return axiosInstance(originalRequest);
+        } else {
+          throw new Error('Failed to refresh token');
         }
       } catch (refreshError) {
         // Refresh token thất bại, logout người dùng
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userEmail');
+        clearTokens();
         localStorage.removeItem('userProfile');
-        
-        // Xóa cookie refreshToken
-        document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
         processQueue(refreshError as AxiosError, null);
         window.location.href = '/login';

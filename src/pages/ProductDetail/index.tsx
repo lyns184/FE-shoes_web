@@ -58,7 +58,7 @@ export default function ProductDetail() {
         </button>
 
         {/* Product Main Section */}
-        <div className="grid md:grid-cols-2 gap-12 mb-16 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 mb-16 items-start">
           {/* Product Images */}
           <div className="flex gap-4">
             {/* Main Image */}
@@ -66,7 +66,7 @@ export default function ProductDetail() {
               <img
                 src={product.image}
                 alt={`${product.name} ${product.brand}`}
-                className="w-full h-full object-contain p-16"
+                className="w-full h-full object-contain p-8 sm:p-16"
               />
               <button
                 onClick={() => setIsFavorite(!isFavorite)}
@@ -208,19 +208,31 @@ export default function ProductDetail() {
         {/* Related Items */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold mb-6">Related Items</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id}
-                name={product.name}
-                description={`${product.brand} - ${product.category}`}
-                price={product.price}
-                thumbnail={product.image}
-                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
-                freeship={product.category === 'freeship'}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {relatedProducts.map((product) => {
+              const getCategoryDisplay = (category: string) => {
+                switch(category) {
+                  case 'trending': return 'Trending';
+                  case 'best-seller': return 'Best Seller';
+                  case 'freeship': return 'Free Ship';
+                  case 'new': return 'New';
+                  case 'popular': return 'Popular';
+                  default: return category;
+                }
+              };
+              return (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  name={product.name}
+                  description={`${product.brand} - ${product.category}`}
+                  price={product.price}
+                  thumbnail={product.image}
+                  category={getCategoryDisplay(product.category)}
+                  freeship={product.category === 'freeship'}
+                />
+              );
+            })}
           </div>
         </div>
 

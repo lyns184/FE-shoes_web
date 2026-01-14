@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
 
 export interface UserProfile {
   id: number;
@@ -22,6 +23,7 @@ export interface OrdersResponse {
     orders: Order[];
     pagination?: any;
   };
+  message?: string;
 }
 
 export interface UserProfileResponse {
@@ -59,95 +61,109 @@ export interface ApiResponse {
 
 export async function getUserProfile(): Promise<UserProfileResponse> {
   try {
-    const response = await axiosInstance.get('/user/profile');
+    console.log('Fetching user profile from server...');
+    const response = await axiosInstance.get(API_ENDPOINTS.USER.PROFILE);
 
     if (response.data.success && response.data.data) {
+      console.log('User profile fetched successfully:', response.data.data);
+      // Cache profile data
       localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      return response.data;
     }
-    return response.data;
-  } catch (error) {
-    // Fallback: Return profile data from login info
-    const userEmail = localStorage.getItem('userEmail');
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch profile from server');
+    console.error('Request URL:', API_ENDPOINTS.USER.PROFILE);
+    console.error('Error:', error.response?.data || error.message);
+    
+    // Try to use cached profile
     const savedProfile = localStorage.getItem('userProfile');
-    
     if (savedProfile) {
-      return {
-        success: true,
-        data: JSON.parse(savedProfile),
-      };
+      console.warn('Using cached profile data from previous request');
+      try {
+        const cachedData = JSON.parse(savedProfile);
+        return {
+          success: true,
+          data: cachedData,
+          message: 'Using cached data - server unavailable',
+        };
+      } catch (parseError) {
+        console.error('Failed to parse cached profile');
+      }
     }
     
+    // Return error - no fake data
     return {
-      success: true,
-      data: {
-        id: 1,
-        name: 'Người Dùng',
-        email: userEmail || 'user@example.com',
-        phone: '0123456789',
-        address: '123 Đường Chính, TP HCM, Việt Nam',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-      },
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch profile. Please try again later.',
     };
   }
 }
 
 export async function updateUserProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
   try {
-    const response = await axiosInstance.put('/user/profile', data);
+    console.log('Updating user profile data...');
+    const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_PROFILE, data);
 
     if (response.data.success && response.data.data) {
+      console.log('User profile updated successfully');
+      // Update cached profile
       localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      return response.data;
     }
-    return response.data;
-  } catch (error) {
-    // Fallback: Return success for testing and save to localStorage
-    const savedProfile = localStorage.getItem('userProfile');
-    const currentProfile = savedProfile ? JSON.parse(savedProfile) : {
-      id: 1,
-      name: 'Người Dùng',
-      email: localStorage.getItem('userEmail') || 'user@example.com',
-      phone: '0123456789',
-      address: '123 Đường Chính, TP HCM, Việt Nam',
-    };
     
-    const updatedProfile = {
-      ...currentProfile,
-      ...data,
-    };
-    
-    localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to update profile');
+    console.error('Error:', error.response?.data || error.message);
     
     return {
-      success: true,
-      message: 'Profile updated successfully',
-      data: updatedProfile,
+      success: false,
+      message: error.response?.data?.message || 'Failed to update profile. Please try again.',
     };
   }
 }
 
 export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse> {
   try {
-    const response = await axiosInstance.get('/user/orders', {
+    console.log('Fetching user orders from server...');
+    // Changed from /api/user/orders to /api/order (user's orders)
+    const response = await axiosInstance.get(API_ENDPOINTS.ORDER.BASE, {
       params: {
         page,
         limit,
       },
     });
 
-    return response.data;
-  } catch (error) {
+    if (response.data.success) {
+      console.log(`Retrieved ${response.data.data?.length || 0} user orders`);
+      return {
+        success: true,
+        data: {
+          orders: response.data.data || [],
+        },
+      };
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch orders');
+    console.error('Error:', error.response?.data || error.message);
+    
     return {
       success: false,
       data: {
         orders: [],
       },
+      message: error.response?.data?.message || 'Failed to fetch orders',
     };
   }
 }
 
 export async function forgotPassword(data: ForgotPasswordData): Promise<ApiResponse> {
   try {
-    const response = await axiosInstance.post('/user/forgot-password', data);
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.FORGOT_PASSWORD, data);
     return response.data;
   } catch (error) {
     return {
@@ -159,7 +175,7 @@ export async function forgotPassword(data: ForgotPasswordData): Promise<ApiRespo
 
 export async function resetPassword(data: ResetPasswordData): Promise<ApiResponse> {
   try {
-    const response = await axiosInstance.post('/user/reset-password', data);
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.RESET_PASSWORD, data);
     return response.data;
   } catch (error) {
     return {

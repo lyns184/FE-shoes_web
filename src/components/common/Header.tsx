@@ -8,6 +8,7 @@ import { products } from '../../data/products';
 export default function ShopHeader() {
   const [searchValue, setSearchValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { totalItems } = useCart();
@@ -53,12 +54,17 @@ export default function ShopHeader() {
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
           <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
-            <img src={logoImg} alt="Logo" className="h-8" />
+            <img 
+              src={logoImg} 
+              alt="Logo" 
+              className="h-6 sm:h-8 object-contain" 
+              style={{ filter: 'brightness(1) contrast(1.1) saturate(1.1)', imageRendering: 'crisp-edges' }}
+            />
           </div>
 
-          {/* Search Bar */}
-          <div ref={searchRef} className="flex-1 max-w-xl mx-8 relative">
-            <form onSubmit={handleSearch}>
+          {/* Desktop Search Bar */}
+          <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl mx-8 relative">
+            <form onSubmit={handleSearch} className="w-full">
               <div className="relative">
                 <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer">
                   <FiSearch className="h-4 w-4 text-gray-400" />
@@ -90,48 +96,46 @@ export default function ShopHeader() {
             </form>
 
             {/* Search Dropdown */}
-            {showDropdown && searchValue.trim() && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                {searchResults.length > 0 ? (
-                  <>
-                    {searchResults.map((product) => (
-                      <div
-                        key={product.id}
-                        onClick={() => handleProductClick(product.id)}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-contain p-1"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{product.brand} - {product.category}</p>
-                        </div>
-                        <p className="text-sm font-semibold text-[#396254]">${product.price}</p>
-                      </div>
-                    ))}
-                    <div
-                      onClick={handleSearch as unknown as React.MouseEventHandler}
-                      className="p-3 text-center text-sm text-[#396254] hover:bg-gray-50 cursor-pointer border-t border-gray-200"
-                    >
-                      See all results for "{searchValue}"
+            {showDropdown && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-md shadow-lg mt-1 max-h-60 overflow-y-auto z-50">
+                {searchResults.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => handleProductClick(product.id)}
+                    className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                  >
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <div>
+                      <p className="font-medium text-sm">{product.name}</p>
+                      <p className="text-xs text-gray-500">{product.brand}</p>
                     </div>
-                  </>
-                ) : (
-                  <div className="p-4 text-center text-sm text-gray-500">
-                    No products found for "{searchValue}"
+                    <div className="ml-auto">
+                      <p className="font-semibold text-sm">${product.price}</p>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-4">
+          {/* Mobile/Actions */}
+          <div className="flex items-center gap-2">
+            {/* Mobile Search Button */}
+            <button 
+              type="button"
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+              title="Search"
+              aria-label="Toggle search"
+            >
+              <FiSearch className="h-5 w-5" />
+            </button>
+
+            {/* Cart Button */}
             <button 
               type="button"
               onClick={() => navigate('/cart')} 
@@ -146,6 +150,8 @@ export default function ShopHeader() {
                 </span>
               )}
             </button>
+
+            {/* Profile Button */}
             <button 
               type="button"
               onClick={() => navigate('/profile')} 
@@ -157,6 +163,35 @@ export default function ShopHeader() {
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar */}
+        {showMobileSearch && (
+          <div className="md:hidden pb-4">
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <button type="submit" className="absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer">
+                  <FiSearch className="h-4 w-4 text-gray-400" />
+                </button>
+                <input
+                  type="text"
+                  placeholder="Search for brand, color, etc"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400"
+                />
+                {searchValue && (
+                  <button 
+                    type="button"
+                    onClick={() => setSearchValue('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                  >
+                    <FiX className="h-4 w-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </header>
   );

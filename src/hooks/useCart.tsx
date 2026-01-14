@@ -1,10 +1,14 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { getCart, addToCart as addToCartAPI, updateCartItem, removeFromCart as removeFromCartAPI } from '../services/cart';
+import { 
+  getAllCartProducts, 
+  addToCart as addToCartAPI, 
+  removeFromCart as removeFromCartAPI 
+} from '../services/cart';
 import { checkAuth } from '../services/auth';
 
 export interface CartItem {
   id: number;
-  productVariantID?: number;
+  productID?: number;
   name: string;
   description?: string;
   size: string;
@@ -44,20 +48,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const result = await getCart();
+      console.log('🔄 Refreshing cart from API...');
+      const result = await getAllCartProducts();
+      
       if (result.success && result.data) {
         // Convert API format to CartItem format
-        const cartItems: CartItem[] = result.data.items.map(item => ({
-          id: item.productVariantID,
-          productVariantID: item.productVariantID,
-          name: item.productName,
-          description: '',
-          size: item.size,
-          color: item.color,
+        const cartItems: CartItem[] = result.data.map(item => ({
+          id: item.product.id,
+          productID: item.product.id,
+          name: item.product.name,
+          description: item.product.description || '',
+          size: '', // API doesn't return size/color in cart items
+          color: '',
           quantity: item.quantity,
-          price: item.price,
-          thumbnail: item.thumbnail,
+          price: parseFloat(item.product.price),
+          thumbnail: item.product.thumbnail,
         }));
+        
+        console.log(`✅ Cart loaded: ${cartItems.length} items`);
         setItems(cartItems);
       }
     } catch (err) {
@@ -102,14 +110,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const productVariantID = newItem.productVariantID || newItem.id;
-      const result = await addToCartAPI({
-        productVariantID,
-        quantity: 1,
-      });
+      const productID = newItem.productID || newItem.id;
+      console.log('🔄 Adding product to cart:', productID);
+      
+      const result = await addToCartAPI({ productID });
 
       if (result.success) {
+        console.log('✅ Product added to cart');
         await refreshCart();
+      } else {
+        console.warn('⚠️ Failed to add to cart:', result.message);
       }
     } catch (err) {
       console.error('Failed to add to cart:', err);
@@ -128,15 +138,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Find the item to get productVariantID
+      // Find the item to get productID
       const item = items.find(i => i.id === id && i.size === size && i.color === color);
-      if (!item) return;
+      if (!item) {
+        console.warn('⚠️ Item not found in cart');
+        return;
+      }
 
-      const productVariantID = item.productVariantID || item.id;
-      const result = await removeFromCartAPI(productVariantID);
+      const productID = item.productID || item.id;
+      console.log('🔄 Removing product from cart:', productID);
+      
+      const result = await removeFromCartAPI(productID);
 
       if (result.success) {
+        console.log('✅ Product removed from cart');
         await refreshCart();
+      } else {
+        console.warn('⚠️ Failed to remove from cart:', result.message);
       }
     } catch (err) {
       console.error('Failed to remove from cart:', err);
@@ -163,32 +181,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Find the item to get productVariantID and calculate new quantity
+      // Find the item
       const item = items.find(i => i.id === id && i.size === size && i.color === color);
-      if (!item) return;
+      if (!item) {
+        console.warn('⚠️ Item not found in cart');
+        return;
+      }
 
       const newQuantity = item.quantity + change;
+      
+      // If quantity becomes 0 or negative, remove item
       if (newQuantity <= 0) {
-        // Remove item if quantity becomes 0 or negative
+        console.log('🔄 Quantity is 0, removing item');
         await removeFromCart(id, size, color);
         return;
       }
 
-      const productVariantID = item.productVariantID || item.id;
-      const result = await updateCartItem(productVariantID, {
-        quantity: newQuantity,
-      });
-
-      if (result.success) {
+      // WORKAROUND: API doesn't have update quantity endpoint
+      // Strategy: Remove old + Add new (multiple times for quantity)
+      const productID = item.productID || item.id;
+      
+      console.log(`🔄 Updating quantity from ${item.quantity} to ${newQuantity}`);
+      
+      if (change > 0) {
+        // Adding quantity: call add API multiple times
+        for (let i = 0; i < change; i++) {
+          await addToCartAPI({ productID });
+        }
+      } else if (change < 0) {
+        // Decreasing quantity: remove and re-add with new quantity
+        // This is not ideal but API doesn't support update
+        console.warn('⚠️ Decreasing quantity requires remove+add workaround');
+        // For now, just refresh and let user know
         await refreshCart();
+        return;
       }
+
+      console.log('✅ Quantity updated');
+      await refreshCart();
     } catch (err) {
       console.error('Failed to update cart:', err);
     }
   }, [items, refreshCart, removeFromCart]);
 
   const clearCart = () => {
+    console.log('🗑️ Clearing cart...');
     setItems([]);
+    setBuyNowItem(null);
     localStorage.removeItem('cartItems');
   };
 

@@ -63,19 +63,31 @@ export default function Home() {
             actionText="See All"
             onActionClick={() => navigate('/trending')}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recommendedProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id}
-                name={product.name}
-                description={`${product.brand} - ${product.category}`}
-                price={product.price}
-                thumbnail={product.image}
-                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
-                freeship={product.category === 'freeship'}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {recommendedProducts.map((product) => {
+              const getCategoryDisplay = (category: string) => {
+                switch(category) {
+                  case 'trending': return 'Trending';
+                  case 'best-seller': return 'Best Seller';
+                  case 'freeship': return 'Free Ship';
+                  case 'new': return 'New';
+                  case 'popular': return 'Popular';
+                  default: return category;
+                }
+              };
+              return (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  name={product.name}
+                  description={`${product.brand} - ${product.category}`}
+                  price={product.price}
+                  thumbnail={product.image}
+                  category={getCategoryDisplay(product.category)}
+                  freeship={product.category === 'freeship'}
+                />
+              );
+            })}
           </div>
         </section>
 
@@ -101,19 +113,31 @@ export default function Home() {
             actionText="See All"
             onActionClick={() => navigate('/trending')}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {trendingProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id}
-                name={product.name}
-                description={`${product.brand} - ${product.category}`}
-                price={product.price}
-                thumbnail={product.image}
-                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
-                freeship={product.category === 'freeship'}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {trendingProducts.map((product) => {
+              const getCategoryDisplay = (category: string) => {
+                switch(category) {
+                  case 'trending': return 'Trending';
+                  case 'best-seller': return 'Best Seller';
+                  case 'freeship': return 'Free Ship';
+                  case 'new': return 'New';
+                  case 'popular': return 'Popular';
+                  default: return category;
+                }
+              };
+              return (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  name={product.name}
+                  description={`${product.brand} - ${product.category}`}
+                  price={product.price}
+                  thumbnail={product.image}
+                  category={getCategoryDisplay(product.category)}
+                  freeship={product.category === 'freeship'}
+                />
+              );
+            })}
           </div>
         </section>
 
@@ -144,19 +168,31 @@ export default function Home() {
             actionText="See All"
             onActionClick={() => navigate('/deals')}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {saleProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id}
-                name={product.name}
-                description={`${product.brand} - ${product.category}`}
-                price={product.price}
-                thumbnail={product.image}
-                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
-                freeship={product.category === 'freeship'}
-              />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {saleProducts.map((product) => {
+              const getCategoryDisplay = (category: string) => {
+                switch(category) {
+                  case 'trending': return 'Trending';
+                  case 'best-seller': return 'Best Seller';
+                  case 'freeship': return 'Free Ship';
+                  case 'new': return 'New';
+                  case 'popular': return 'Popular';
+                  default: return category;
+                }
+              };
+              return (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  name={product.name}
+                  description={`${product.brand} - ${product.category}`}
+                  price={product.price}
+                  thumbnail={product.image}
+                  category={getCategoryDisplay(product.category)}
+                  freeship={product.category === 'freeship'}
+                />
+              );
+            })}
           </div>
         </section>
 
