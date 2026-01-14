@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import ProductForm, { type ProductFormData } from '../../../../components/Form/ProductForm';
+import { getAllProducts, type Product as ApiProduct } from '../../../../services/product';
 
 type Variant = {
     color: { label: string; hex: string };
@@ -27,7 +29,41 @@ const AdminProducts = () => {
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-    const products = useMemo<Product[]>(() => ([
+    // Fetch products from API using TanStack Query
+    const { data: productsData, isLoading, isError, error } = useQuery({
+        queryKey: ['products'],
+        queryFn: getAllProducts,
+    });
+
+    // Transform API data to match component's Product type
+    const products = useMemo<Product[]>(() => {
+        if (!productsData?.success || !productsData.data) return [];
+        
+        return productsData.data.map((apiProduct: ApiProduct) => ({
+            id: apiProduct.id,
+            image: apiProduct.thumbnail?.[0]?.url || '',
+            name: apiProduct.name,
+            brand: apiProduct.brand.name,
+            categories: apiProduct.category,
+            variants: apiProduct.productVariants.map(v => ({
+                color: {
+                    label: v.color.name,
+                    hex: v.color.hex
+                },
+                size: v.size,
+                quantity: v.quantity
+            })),
+            price: parseFloat(apiProduct.price),
+            status: apiProduct.active ? 'Active' as const : 'Inactive' as const
+        }));
+    }, [productsData]);
+
+    useEffect(() => {
+        console.log('Products data loaded:', products);
+    }, [products]);
+
+    // Mock data for development (remove when API is ready)
+    const mockProducts = useMemo<Product[]>(() => ([
         {
             id: 1,
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
@@ -254,8 +290,8 @@ const AdminProducts = () => {
                 </div>
             </div>
 
-            <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200">
+                <div className="overflow-x-auto overflow-y-visible">
                     <table className="min-w-full">
                         <thead>
                             <tr className="text-left text-neutral-500 text-lg font-semibold border-b border-neutral-200">
@@ -270,11 +306,38 @@ const AdminProducts = () => {
                                 <th className="py-4 px-6"></th>
                             </tr>
                         </thead>
-                        <tbody className="text-neutral-900 text-base">
+                        <tbody className="text-neutral-900 text-base overflow-visible">
+                            {isLoading && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Loading products...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            {isError && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-red-600">
+                                        Error loading products: {error instanceof Error ? error.message : 'Unknown error'}
+                                    </td>
+                                </tr>
+                            )}
+                            {!isLoading && !isError && paginatedProducts.length === 0 && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        No products found
+                                    </td>
+                                </tr>
+                            )}
                             {paginatedProducts.map((product) => {
                                 const isActive = product.status === 'Active';
                                 return (
-                                    <tr key={product.id} className="border-b border-neutral-200 last:border-b-0">
+                                    <tr key={product.id} className="border-b border-neutral-200 last:border-b-0 relative">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
                                                 <img src={product.image} alt={product.name} className="w-14 h-14 object-contain rounded-lg border border-neutral-200 bg-neutral-50" />
@@ -311,7 +374,7 @@ const AdminProducts = () => {
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(product.price * 1000).toLocaleString()}₫</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{product.price.toLocaleString()}₫</td>
                                         <td className="py-4 px-6 font-semibold text-neutral-900 text-center">{product.variants.reduce((total, v) => total + v.quantity, 0)}</td>
                                         <td className="py-4 px-6">
                                             <span className={`${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{product.status}</span>
@@ -332,7 +395,7 @@ const AdminProducts = () => {
                                                 </button>
 
                                                 {openMenu === product.name && (
-                                                    <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
+                                                    <div className="absolute right-0 bottom-full mb-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -421,8 +484,8 @@ const AdminProducts = () => {
         </section>
 
         {showProductForm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-                <div className="w-full max-w-5xl my-8">
+            <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto flex items-start justify-center py-8">
+                <div className="w-full max-w-5xl">
                     <ProductForm
                         mode={editingProduct ? 'edit' : 'create'}
                         productId={editingProduct?.id}

@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { router } from './router'
 import { CartProvider } from './hooks/useCart'
 import { UserProvider } from './hooks/UserContext'
@@ -15,6 +16,7 @@ function App() {
       <UserProvider>
         <CartProvider>
           <RouterProvider router={router} />
+          <Toaster position="top-center" />
         </CartProvider>
       </UserProvider>
     </GoogleOAuthProvider>

@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import BasicInfoForm from './BasicInfoForm';
 import VariantsForm from './VariantsForm';
+import { createProduct, createVariants, getAllColors, type CreateProductPayload, type VariantInput, type Color } from '../../../services/product';
 
 export interface ProductFormProps {
   mode?: 'create' | 'edit';
@@ -10,6 +13,7 @@ export interface ProductFormProps {
   productName?: string;
   brand?: string;
   price?: number;
+  discount?: number;
   categories?: string[];
   description?: string;
   status?: 'Active' | 'Inactive';
@@ -20,7 +24,7 @@ export interface ProductFormProps {
 }
 
 export interface Variant {
-  color: { label: string; hex: string };
+  color: { label: string; hex: string; id?: number };
   size: number;
   quantity: number;
 }
@@ -29,26 +33,13 @@ export interface ProductFormData {
   productName: string;
   brand: string;
   price: number;
+  discount: number;
   categories: string[];
   description: string;
   status: 'Active' | 'Inactive';
   images: string[];
   variants: Variant[];
 }
-
-const AVAILABLE_COLORS = [
-  { name: 'Black', hex: '#000000' },
-  { name: 'Red', hex: '#EF4444' },
-  { name: 'Green', hex: '#22C55E' },
-  { name: 'White', hex: '#FFFFFF' },
-  { name: 'Blue', hex: '#3B82F6' },
-  { name: 'Brown', hex: '#92400E' },
-  { name: 'Pink', hex: '#EC4899' },
-  { name: 'Gray', hex: '#6B7280' },
-  { name: 'Orange', hex: '#F97316' },
-  { name: 'Yellow', hex: '#FBBF24' },
-  { name: 'Purple', hex: '#A855F7' },
-];
 
 const AVAILABLE_SIZES = ['36', '37', '38', '39', '40', '41', '42', '43'];
 
@@ -58,6 +49,7 @@ const ProductFrom = ({
   productName = '',
   brand = '',
   price = 0.0,
+  discount = 0,
   categories = [],
   description = '',
   status = 'Active',
@@ -68,12 +60,34 @@ const ProductFrom = ({
 }: ProductFormProps) => {
   const [activeTab, setActiveTab] = useState<'basic' | 'variants'>('basic');
   const isEditMode = mode === 'edit';
+  const queryClient = useQueryClient();
+
+  // Fetch colors from API
+  const { data: colorsData } = useQuery({
+    queryKey: ['colors'],
+    queryFn: getAllColors,
+  });
+
+  const availableColors = useMemo<Color[]>(() => colorsData?.data || [], [colorsData]);
+
+  const createProductMutation = useMutation({
+    mutationFn: createProduct,
+  });
+
+  const createVariantsMutation = useMutation({
+    mutationFn: createVariants,
+    onSuccess: () => {
+      // Only invalidate products query after variants are created successfully
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
 
   // Basic Info state
   const [formData, setFormData] = useState<ProductFormData>({
     productName,
     brand,
     price,
+    discount,
     categories,
     description,
     status,
@@ -83,6 +97,7 @@ const ProductFrom = ({
 
   // Variants state
   const [uploadedImages, setUploadedImages] = useState<string[]>(images);
+  const [thumbnailFiles, setThumbnailFiles] = useState<File[]>([]);
   const [selectedColorsLocal, setSelectedColorsLocal] = useState<string[]>(
     Array.from(new Set(variants.map(v => v.color.label)))
   );
@@ -98,6 +113,7 @@ const ProductFrom = ({
       productName,
       brand,
       price,
+      discount,
       categories,
       description,
       status,
@@ -105,6 +121,7 @@ const ProductFrom = ({
       variants,
     });
     setUploadedImages(images);
+    setThumbnailFiles([]);
     setSelectedColorsLocal(Array.from(new Set(variants.map(v => v.color.label))));
     setSelectedSizesLocal(Array.from(new Set(variants.map(v => v.size.toString()))).sort((a, b) => parseInt(a) - parseInt(b)));
     setVariantsLocal(variants);
@@ -133,7 +150,7 @@ const ProductFrom = ({
   const regenerateVariants = (colors: string[], sizes: string[]) => {
     const newVariants: Variant[] = [];
     colors.forEach(colorName => {
-      const colorObj = AVAILABLE_COLORS.find(c => c.name === colorName);
+      const colorObj = availableColors.find(c => c.name === colorName);
       if (colorObj) {
         sizes.forEach(size => {
           const sizeNum = parseInt(size);
@@ -141,7 +158,7 @@ const ProductFrom = ({
             v => v.color.label === colorName && v.size === sizeNum
           );
           newVariants.push({
-            color: { label: colorObj.name, hex: colorObj.hex },
+            color: { label: colorObj.name, hex: colorObj.hex, id: colorObj.id },
             size: sizeNum,
             quantity: existing?.quantity ?? 0,
           });
@@ -164,36 +181,105 @@ const ProductFrom = ({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
+      const filesArray = Array.from(files);
+      const newImages = filesArray.map(file => URL.createObjectURL(file));
       setUploadedImages(prev => [...prev, ...newImages].slice(0, 8));
+      setThumbnailFiles(prev => [...prev, ...filesArray].slice(0, 8));
     }
   };
 
   const handleRemoveImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    setThumbnailFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const isSubmitting = createProductMutation.isPending || createVariantsMutation.isPending;
+
+  const handleSubmit = async () => {
     if (selectedColorsLocal.length === 0 || selectedSizesLocal.length === 0) {
-      alert('Please select at least one color and one size');
+      toast.error('Please select at least one color and one size');
       return;
     }
+
+    const brandId = Number(formData.brand);
+    if (!Number.isFinite(brandId)) {
+      toast.error('Brand ID must be a number');
+      return;
+    }
+
+    const missingColorId = variantsLocal.some(v => v.color.id == null);
+    if (missingColorId) {
+      toast.error('Each variant needs a color ID to create variants.');
+      return;
+    }
+
+    const productPayload: CreateProductPayload = {
+      name: formData.productName,
+      description: formData.description,
+      price: formData.price,
+      active: formData.status === 'Active',
+      brandID: brandId,
+      category: formData.categories,
+      discount: formData.discount > 0 ? formData.discount / 100 : undefined,
+      thumbnailFiles,
+    };
+
     const finalData: ProductFormData = {
       ...formData,
       images: uploadedImages,
       variants: variantsLocal,
     };
-    onSubmit?.(finalData);
+
+    try {
+      const toastId = toast.loading('Creating product...');
+
+      const productResult = await createProductMutation.mutateAsync(productPayload);
+
+      if (!productResult.success || !productResult.data) {
+        toast.error(productResult.message || 'Failed to create product', { id: toastId });
+        return;
+      }
+
+      if (variantsLocal.length > 0) {
+        toast.loading('Creating variants...', { id: toastId });
+
+        const variantsPayload: VariantInput[] = variantsLocal.map(v => ({
+          size: v.size,
+          quantity: v.quantity,
+          colorID: v.color.id as number,
+        }));
+
+        const variantsResult = await createVariantsMutation.mutateAsync({
+          productID: productResult.data.id,
+          variants: variantsPayload,
+        });
+
+        if (!variantsResult.success) {
+          toast.error(variantsResult.message || 'Failed to create variants', { id: toastId });
+          return;
+        }
+      }
+
+      toast.success('Product created successfully!', { id: toastId });
+      onSubmit?.(finalData);
+      onCancel?.();
+    } catch (err) {
+      toast.error('An unexpected error occurred while creating the product.');
+      console.error('Failed to submit product:', err);
+    }
   };
 
-  const isSubmitDisabled = selectedColorsLocal.length === 0 || selectedSizesLocal.length === 0;
+  const isSubmitDisabled =
+    selectedColorsLocal.length === 0 ||
+    selectedSizesLocal.length === 0 ||
+    isSubmitting;
 
   const handleCancel = () => {
     onCancel?.();
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm">
+    <div className="w-full bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-neutral-900 mb-1">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
@@ -238,7 +324,6 @@ const ProductFrom = ({
           uploadedImages={uploadedImages}
           onUpload={handleImageUpload}
           onRemoveImage={handleRemoveImage}
-          availableColors={AVAILABLE_COLORS}
           selectedColors={selectedColorsLocal}
           onToggleColor={handleColorToggle}
           availableSizes={AVAILABLE_SIZES}
@@ -266,7 +351,7 @@ const ProductFrom = ({
               : 'bg-[#396254] text-white hover:bg-[#2d4a3f] cursor-pointer'
           }`}
         >
-          {isEditMode ? 'Save Changes' : 'Add Product'}
+          {isSubmitting ? 'Processing...' : isEditMode ? 'Save Changes' : 'Add Product'}
         </button>
       </div>
     </div>

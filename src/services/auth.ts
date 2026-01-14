@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+const API_BASE_URL = 'http://localhost:6869/api';
 
 interface RegisterData {
   name: string;
