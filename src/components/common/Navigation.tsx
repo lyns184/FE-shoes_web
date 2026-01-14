@@ -1,33 +1,25 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const navItems = [{ label: 'Home', id: '' }, { label: 'Brands', id: 'brands' }, { label: 'Trending', id: 'trending' }, { label: 'New', id: 'new' }, { label: 'Deals', id: 'deals' }];
+const navItems = [
+  { label: 'Home', path: '/' }, 
+  { label: 'Brands', path: '/brands' }, 
+  { label: 'Trending', path: '/trending' }, 
+  { label: 'New', path: '/new' }, 
+  { label: 'Deals', path: '/deals' }
+];
 
 export default function ShopNavigation() {
-  const [activeItem, setActiveItem] = useState('Home');
   const location = useLocation();
+  const navigate = useNavigate();
+  const [activeItem, setActiveItem] = useState(() => {
+    const currentItem = navItems.find(item => item.path === location.pathname);
+    return currentItem ? currentItem.label : 'Home';
+  });
 
-  const handleNavClick = (item: { label: string; id: string }) => {
+  const handleNavClick = (item: { label: string; path: string }) => {
     setActiveItem(item.label);
-    
-    // If not on home page, navigate to home first
-    if (location.pathname !== '/') {
-      window.location.href = '/';
-      return;
-    }
-
-    // Scroll to section with offset for header visibility
-    if (item.id) {
-      const element = document.getElementById(item.id);
-      if (element) {
-        const navHeight = 64; // Height of navigation bar
-        const offset = element.getBoundingClientRect().top + window.scrollY - navHeight - 100;
-        window.scrollTo({ top: offset, behavior: 'smooth' });
-      }
-    } else {
-      // Scroll to top for Home
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    navigate(item.path);
   };
 
   return (
@@ -39,7 +31,7 @@ export default function ShopNavigation() {
               key={item.label}
               onClick={() => handleNavClick(item)}
               className={`text-base uppercase transition-colors relative pb-1 cursor-pointer ${
-                activeItem === item.label
+                location.pathname === item.path
                   ? 'font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-white'
                   : 'font-semibold hover:text-teal-100'
               }`}
