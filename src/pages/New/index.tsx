@@ -8,12 +8,11 @@ import { products } from '../../data/products';
 export default function New() {
   const navigate = useNavigate();
 
-  // Filter products for new arrivals - newest products or those with "New" indicator
+  // Filter products for new arrivals
   const newProducts = useMemo(() => {
     return products.filter(product => 
-      product.badge === 'New Arrival' ||
-      product.badge === 'Freeship' ||
-      product.id >= Math.max(...products.map(p => p.id)) - 8 // Last 8 products as "new"
+      product.category === 'new' ||
+      product.id >= Math.max(...products.map(p => p.id)) - 6 // Last 6 products as "new"
     ).slice(0, 16); // Limit to 16 new items
   }, []);
 
@@ -50,7 +49,16 @@ export default function New() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {newProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         )}

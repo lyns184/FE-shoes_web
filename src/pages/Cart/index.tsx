@@ -5,7 +5,6 @@ import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
 import { useCart } from '../../hooks/useCart';
 import { getRelatedProducts } from '../../data/products';
-import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -152,12 +151,6 @@ export default function Cart() {
               </div>
               <button 
                 onClick={() => {
-                  // Check authentication first
-                  if (!checkAuth()) {
-                    navigate('/login');
-                    return;
-                  }
-                  
                   // Clear buyNowItem when checking out from cart
                   setBuyNowItem(null);
                   navigate('/checkout');
@@ -175,7 +168,16 @@ export default function Cart() {
           <h2 className="text-xl font-bold mb-6">You Might Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {recommendedProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </div>

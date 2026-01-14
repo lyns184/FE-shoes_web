@@ -18,8 +18,8 @@ export default function Search() {
     if (!displayQuery) return [];
     return products.filter(product => 
       product.name.toLowerCase().includes(displayQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(displayQuery.toLowerCase()) ||
-      product.badge?.toLowerCase().includes(displayQuery.toLowerCase())
+      product.brand.toLowerCase().includes(displayQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(displayQuery.toLowerCase())
     );
   }, [displayQuery]);
 
@@ -83,7 +83,16 @@ export default function Search() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {results.map((product) => (
-                  <ProductCard key={product.id} {...product} />
+                  <ProductCard 
+                    key={product.id} 
+                    id={product.id}
+                    name={product.name}
+                    description={`${product.brand} - ${product.category}`}
+                    price={product.price}
+                    thumbnail={product.image}
+                    badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                    freeship={product.category === 'freeship'}
+                  />
                 ))}
               </div>
             )}

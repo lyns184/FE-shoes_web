@@ -1,6 +1,4 @@
-import { getAccessToken } from './auth';
-
-const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+import axiosInstance from './axiosInstance';
 
 export interface CreateOrderData {
   shippingAddress: string;
@@ -41,32 +39,26 @@ export interface GetOrderResponse {
   data?: Order;
 }
 
-// Helper to add auth header
-function getHeaders(): HeadersInit {
-  const token = getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
 export async function createOrder(data: CreateOrderData): Promise<CreateOrderResponse> {
-  const response = await fetch(`${API_BASE_URL}/orders`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.post('/orders', data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to create order',
+    };
+  }
 }
 
 export async function getOrder(orderId: number): Promise<GetOrderResponse> {
-  const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to fetch order',
+    };
+  }
 }
