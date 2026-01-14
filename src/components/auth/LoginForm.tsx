@@ -2,6 +2,31 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/auth';
 
+// Validation functions
+const validatePassword = (password: string): string | null => {
+  if (!password) {
+    return 'Password is required';
+  }
+  if (password.length < 6) {
+    return 'Password must be at least 6 characters long';
+  }
+  if (password.length > 128) {
+    return 'Password must not exceed 128 characters';
+  }
+  return null;
+};
+
+const validateEmail = (email: string): string | null => {
+  if (!email) {
+    return 'Email is required';
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return 'Please enter a valid email address';
+  }
+  return null;
+};
+
 export default function LoginForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -9,6 +34,7 @@ export default function LoginForm() {
     password: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -18,6 +44,20 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
+    
+    // Validate fields
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+    
+    if (emailError || passwordError) {
+      setFieldErrors({
+        email: emailError || undefined,
+        password: passwordError || undefined,
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -41,6 +81,14 @@ export default function LoginForm() {
       ...prev,
       [name]: value,
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name as keyof typeof fieldErrors]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
   };
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
@@ -74,16 +122,25 @@ export default function LoginForm() {
           </div>
         )}
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address*"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
-          required
-          disabled={isLoading}
-        />
+        <div>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address*"
+            value={formData.email}
+            onChange={handleChange}
+            className={`w-full px-4 py-3 border rounded-none focus:outline-none focus:ring-1 transition-colors ${
+              fieldErrors.email 
+                ? 'border-red-400 focus:ring-red-400' 
+                : 'border-gray-300 focus:ring-gray-400'
+            }`}
+            required
+            disabled={isLoading}
+          />
+          {fieldErrors.email && (
+            <p className="text-red-600 text-xs mt-1">{fieldErrors.email}</p>
+          )}
+        </div>
 
         <div>
           <input
@@ -92,10 +149,17 @@ export default function LoginForm() {
             placeholder="Password*"
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className={`w-full px-4 py-3 border rounded-none focus:outline-none focus:ring-1 transition-colors ${
+              fieldErrors.password 
+                ? 'border-red-400 focus:ring-red-400' 
+                : 'border-gray-300 focus:ring-gray-400'
+            }`}
             required
             disabled={isLoading}
           />
+          {fieldErrors.password && (
+            <p className="text-red-600 text-xs mt-1">{fieldErrors.password}</p>
+          )}
           <div className="flex justify-end mt-2">
             <button 
               type="button" 

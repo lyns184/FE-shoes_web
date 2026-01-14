@@ -1,6 +1,4 @@
-import { getAccessToken } from './auth';
-
-const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+import axiosInstance from './axiosInstance';
 
 export interface CartItemAPI {
   productVariantID: number;
@@ -32,56 +30,53 @@ export interface UpdateCartData {
   quantity: number;
 }
 
-// Helper to add auth header
-function getHeaders(): HeadersInit {
-  const token = getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
 export async function getCart(): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.get('/cart');
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to fetch cart',
+    };
+  }
 }
 
 export async function addToCart(data: AddToCartData): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.post('/cart/items', data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to add to cart',
+    };
+  }
 }
 
 export async function updateCartItem(
   productVariantID: number,
   data: UpdateCartData
 ): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items/${productVariantID}`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.put(`/cart/items/${productVariantID}`, data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to update cart item',
+    };
+  }
 }
 
 export async function removeFromCart(productVariantID: number): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items/${productVariantID}`, {
-    method: 'DELETE',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.delete(`/cart/items/${productVariantID}`);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to remove from cart',
+    };
+  }
 }

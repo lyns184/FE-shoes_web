@@ -8,12 +8,12 @@ import { products } from '../../data/products';
 export default function Trending() {
   const navigate = useNavigate();
 
-  // Filter products for trending - products with higher prices or specific badges
+  // Filter products for trending category
   const trendingProducts = useMemo(() => {
     return products.filter(product => 
-      product.price >= 300 || // Higher priced items are trending
-      product.badge === 'Best Sold' ||
-      product.badge === 'Hot'
+      product.category === 'trending' ||
+      product.category === 'best-seller' ||
+      product.price >= 150 // Higher priced items
     ).slice(0, 12); // Limit to 12 trending items
   }, []);
 
@@ -50,7 +50,16 @@ export default function Trending() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {trendingProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         )}

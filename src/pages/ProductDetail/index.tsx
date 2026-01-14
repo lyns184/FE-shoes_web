@@ -6,7 +6,6 @@ import InfoCard from '../../components/card/InfoCard';
 import ProductCard from '../../components/card/ProductCard';
 import { getProductById, getRelatedProducts } from '../../data/products';
 import { useCart } from '../../hooks/useCart';
-import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -33,8 +32,8 @@ export default function ProductDetail() {
   const product = getProductById(Number(id) || 1);
   const relatedProducts = getRelatedProducts(Number(id) || 1, 4);
 
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || '36');
-  const [selectedColor, setSelectedColor] = useState('Black');
+  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || 36);
+  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0]?.label || 'Black');
   const [showProductDetails, setShowProductDetails] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -65,8 +64,8 @@ export default function ProductDetail() {
             {/* Main Image */}
             <div className="flex-1 relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
               <img
-                src={product.thumbnail}
-                alt={`${product.name} ${product.description}`}
+                src={product.image}
+                alt={`${product.name} ${product.brand}`}
                 className="w-full h-full object-contain p-16"
               />
               <button
@@ -86,9 +85,9 @@ export default function ProductDetail() {
             <div className="mb-6">
               <label className="text-sm font-semibold mb-3 block">Size:</label>
               <div className="flex gap-2 flex-wrap">
-                {(product.sizes || ['36', '37', '38', '39', '40', '41']).map((size, index) => (
+                {(product.sizes || [36, 37, 38, 39, 40, 41]).map((size) => (
                   <button
-                    key={index}
+                    key={size}
                     onClick={() => setSelectedSize(size)}
                     className={`w-12 h-12 border rounded-md transition-colors cursor-pointer ${
                       selectedSize === size
@@ -106,23 +105,17 @@ export default function ProductDetail() {
             <div className="mb-6">
               <label className="text-sm font-semibold mb-3 block">Color:</label>
               <div className="flex gap-2 flex-wrap">
-                {[
-                  { name: 'Black', color: '#1a1a1a' },
-                  { name: 'White', color: '#ffffff' },
-                  { name: 'Red', color: '#dc2626' },
-                  { name: 'Blue', color: '#2563eb' },
-                  { name: 'Brown', color: '#78350f' },
-                ].map((colorOption) => (
+                {(product.colors || []).map((colorOption) => (
                   <button
-                    key={colorOption.name}
-                    onClick={() => setSelectedColor(colorOption.name)}
+                    key={colorOption.label}
+                    onClick={() => setSelectedColor(colorOption.label)}
                     className={`w-10 h-10 rounded-full cursor-pointer transition-all ${
-                      selectedColor === colorOption.name
+                      selectedColor === colorOption.label
                         ? 'ring-2 ring-offset-2 ring-[#396254]'
                         : 'hover:scale-110'
                     }`}
-                    style={{ backgroundColor: colorOption.color, border: colorOption.name === 'White' ? '1px solid #e5e7eb' : 'none' }}
-                    title={colorOption.name}
+                    style={{ backgroundColor: colorOption.hex, border: colorOption.label === 'White' ? '1px solid #e5e7eb' : 'none' }}
+                    title={colorOption.label}
                   />
                 ))}
               </div>
@@ -140,12 +133,6 @@ export default function ProductDetail() {
               <div className="flex gap-3">
                 <button 
                   onClick={() => {
-                    // Check authentication first
-                    if (!checkAuth()) {
-                      navigate('/login');
-                      return;
-                    }
-                    
                     if (product && !isAddingToCart) {
                       setIsAddingToCart(true);
                       addToCart({
@@ -171,12 +158,6 @@ export default function ProductDetail() {
                 </button>
                 <button 
                   onClick={() => {
-                    // Check authentication first
-                    if (!checkAuth()) {
-                      navigate('/login');
-                      return;
-                    }
-                    
                     if (product) {
                       setBuyNowItem({
                         id: product.id,
@@ -228,8 +209,17 @@ export default function ProductDetail() {
         <div className="mb-16">
           <h2 className="text-2xl font-bold mb-6">Related Items</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedProducts.map((product, index) => (
-              <ProductCard key={index} {...product} />
+            {relatedProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </div>

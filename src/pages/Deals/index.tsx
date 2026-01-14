@@ -8,13 +8,12 @@ import { products } from '../../data/products';
 export default function Deals() {
   const navigate = useNavigate();
 
-  // Filter products for deals/sales - products with discounts or lower prices
+  // Filter products for deals/sales
   const dealProducts = useMemo(() => {
     return products.filter(product => 
-      product.originalPrice || // Products with original price (indicating discount)
-      product.price <= 250 || // Lower priced items
-      product.badge === 'Sale' ||
-      product.badge === 'Best Sold'
+      product.category === 'best-seller' || // Best sellers are good deals
+      product.category === 'freeship' || // Free shipping deals
+      product.price <= 120 // Lower priced items are deals
     ).slice(0, 20); // Limit to 20 deal items
   }, []);
 
@@ -51,7 +50,16 @@ export default function Deals() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {dealProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         )}

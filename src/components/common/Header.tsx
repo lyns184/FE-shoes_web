@@ -17,7 +17,8 @@ export default function ShopHeader() {
     if (!searchValue.trim()) return [];
     return products.filter(product =>
       product.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchValue.toLowerCase())
+      product.brand.toLowerCase().includes(searchValue.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchValue.toLowerCase())
     ).slice(0, 5); // Limit to 5 results
   }, [searchValue]);
 
@@ -101,14 +102,14 @@ export default function ShopHeader() {
                       >
                         <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
                           <img
-                            src={product.thumbnail}
+                            src={product.image}
                             alt={product.name}
                             className="w-full h-full object-contain p-1"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{product.description}</p>
+                          <p className="text-xs text-gray-500 truncate">{product.brand} - {product.category}</p>
                         </div>
                         <p className="text-sm font-semibold text-[#396254]">${product.price}</p>
                       </div>
@@ -132,8 +133,11 @@ export default function ShopHeader() {
           {/* Actions */}
           <div className="flex items-center gap-4">
             <button 
+              type="button"
               onClick={() => navigate('/cart')} 
-              className="relative p-2 hover:bg-gray-100 rounded-full cursor-pointer"
+              className="relative p-2 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+              title="Shopping Cart"
+              aria-label="Go to shopping cart"
             >
               <FiShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
@@ -143,9 +147,11 @@ export default function ShopHeader() {
               )}
             </button>
             <button 
+              type="button"
               onClick={() => navigate('/profile')} 
-              className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
+              className="p-2 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
               title="Profile"
+              aria-label="Go to profile"
             >
               <FiUser className="h-5 w-5" />
             </button>

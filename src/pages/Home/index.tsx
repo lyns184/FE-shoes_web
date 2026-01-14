@@ -6,13 +6,13 @@ import BrandCard from '../../components/card/BrandCard';
 import ReleaseCard from '../../components/card/ReleaseCard';
 import InfoCard from '../../components/card/InfoCard';
 import SectionHeader from '../../components/common/SectionHeader';
-import { products, getNewReleases, getSaleProducts } from '../../data/products';
+import { products, getNewReleases, getTrendingProducts, getBestSellerProducts } from '../../data/products';
 import nikeImg from '../../assets/nike.jpg';
 
 const recommendedProducts = products.slice(0, 4);
-const trendingProducts = products.slice(4, 8);
+const trendingProducts = getTrendingProducts(4);
 const newReleases = getNewReleases(4);
-const saleProducts = getSaleProducts(4);
+const saleProducts = getBestSellerProducts(4);
 
 const brands = [
   {
@@ -64,27 +64,37 @@ export default function Home() {
             onActionClick={() => navigate('/trending')}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recommendedProducts.map((product, index) => (
-              <ProductCard key={index} {...product} />
+            {recommendedProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </section>
 
-        {/* Popular Brands */}
-        <section id="brands">
-          <SectionHeader 
-            title="Popular Brands" 
-            actionText="See All"
-            onActionClick={() => navigate('/brands')}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {brands.map((brand, index) => (
-              <BrandCard key={index} {...brand} />
-            ))}
-          </div>
-        </section>
+        {/* Popular Brands - HIDDEN */}
+        {false && (
+          <section id="brands">
+            <SectionHeader 
+              title="Popular Brands" 
+              actionText="See All"
+              onActionClick={() => navigate('/brands')}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {brands.map((brand, index) => (
+                <BrandCard key={index} {...brand} />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Trending Shoes */}
         <section id="trending">
           <SectionHeader 
             title="Trending Shoes" 
@@ -92,8 +102,17 @@ export default function Home() {
             onActionClick={() => navigate('/trending')}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {trendingProducts.map((product, index) => (
-              <ProductCard key={index} {...product} />
+            {trendingProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </section>
@@ -107,7 +126,13 @@ export default function Home() {
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {newReleases.map((release) => (
-              <ReleaseCard key={release.id} id={release.id} date={release.releaseDate || 'Dec 12'} name={release.name} imageUrl={release.thumbnail} />
+              <ReleaseCard 
+                key={release.id} 
+                id={release.id} 
+                date="Dec 12" 
+                name={release.name} 
+                imageUrl={release.image} 
+              />
             ))}
           </div>
         </section>
@@ -120,8 +145,17 @@ export default function Home() {
             onActionClick={() => navigate('/deals')}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {saleProducts.map((product, index) => (
-              <ProductCard key={index} {...product} />
+            {saleProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </section>

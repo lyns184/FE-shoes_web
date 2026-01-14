@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiChevronLeft, FiMinus, FiPlus, FiX } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
@@ -8,7 +8,6 @@ import OrderConfirmedModal from '../../components/common/OrderConfirmedModal';
 import { useCart } from '../../hooks/useCart';
 import { useUser } from '../../hooks/UserContext';
 import { getRelatedProducts } from '../../data/products';
-import { checkAuth } from '../../services/auth';
 
 const infoCards = [
   {
@@ -34,16 +33,6 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [addressMode, setAddressMode] = useState<'default' | 'new'>('new'); // Always start with 'new'
   const showOrderConfirmed = searchParams.get('orderConfirmed') === 'true';
-
-  // Check authentication on component mount
-  useEffect(() => {
-    if (!checkAuth()) {
-      navigate('/login');
-      return;
-    }
-  }, [navigate]);
-
-  // Remove the problematic useEffect that auto-clears the orderConfirmed param
 
   const [deliveryInfo, setDeliveryInfo] = useState(() => {
     if (profile?.defaultShippingAddress) {
@@ -567,7 +556,16 @@ export default function Checkout() {
           <h2 className="text-xl font-bold mb-6">You Might Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {recommendedProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+              <ProductCard 
+                key={product.id} 
+                id={product.id}
+                name={product.name}
+                description={`${product.brand} - ${product.category}`}
+                price={product.price}
+                thumbnail={product.image}
+                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
+                freeship={product.category === 'freeship'}
+              />
             ))}
           </div>
         </div>

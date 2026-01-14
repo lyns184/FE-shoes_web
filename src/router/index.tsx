@@ -70,10 +70,10 @@ const routes: RouteObject[] = [
     path: '/search',
     element: <Search />,
   },
-  {
-    path: '/brands',
-    element: <Brands />,
-  },
+  // {
+  //   path: '/brands',
+  //   element: <Brands />,
+  // },
   {
     path: '/trending',
     element: <Trending />,
