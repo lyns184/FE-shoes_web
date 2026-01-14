@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { type ProductFormData } from './index';
+import { getAllBrands, type Brand } from '../../../services/product';
 
 const CATEGORY_OPTIONS = ['Trending', 'Best Seller', 'Freeship', 'New', 'Popular'] as const;
 
@@ -11,6 +13,14 @@ interface BasicInfoFormProps {
 const BasicInfoForm = ({ formData, onChange }: BasicInfoFormProps) => {
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const categoryRef = useRef<HTMLDivElement | null>(null);
+
+    // Fetch brands from API
+    const { data: brandsData, isLoading: brandsLoading } = useQuery({
+        queryKey: ['brands'],
+        queryFn: getAllBrands,
+    });
+
+    const availableBrands = brandsData?.data || [];
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -48,21 +58,28 @@ const BasicInfoForm = ({ formData, onChange }: BasicInfoFormProps) => {
                 </div>
                 <div>
                     <label className="block text-base font-medium text-neutral-900 mb-3">Brand</label>
-                    <select
-                        value={formData.brand}
-                        onChange={(e) => onChange('brand', e.target.value)}
-                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-pointer bg-white"
-                    >
-                        <option value="">Brand Name</option>
-                        <option value="Nike">Nike</option>
-                        <option value="Adidas">Adidas</option>
-                        <option value="Jordan">Jordan</option>
-                        <option value="Puma">Puma</option>
-                    </select>
+                    {brandsLoading ? (
+                        <select disabled className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-not-allowed bg-neutral-50">
+                            <option>Loading brands...</option>
+                        </select>
+                    ) : (
+                        <select
+                            value={formData.brand}
+                            onChange={(e) => onChange('brand', e.target.value)}
+                            className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent appearance-none cursor-pointer bg-white"
+                        >
+                            <option value="">Select Brand</option>
+                            {availableBrands.map(brand => (
+                                <option key={brand.id} value={brand.id.toString()}>
+                                    {brand.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-2 gap-6">
                 <div>
                     <label className="block text-base font-medium text-neutral-900 mb-3">Price</label>
                     <input
@@ -72,6 +89,19 @@ const BasicInfoForm = ({ formData, onChange }: BasicInfoFormProps) => {
                         onChange={(e) => onChange('price', parseFloat(e.target.value))}
                         className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
                         step="0.01"
+                    />
+                </div>
+                <div>
+                    <label className="block text-base font-medium text-neutral-900 mb-3">Discount (%)</label>
+                    <input
+                        type="number"
+                        placeholder="0"
+                        value={formData.discount}
+                        onChange={(e) => onChange('discount', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+                        min="0"
+                        max="100"
+                        step="0.1"
                     />
                 </div>
             </div>
