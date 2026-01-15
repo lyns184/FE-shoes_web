@@ -2,8 +2,17 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import { getAllUsers, type AdminUser as ApiUser } from '../../../../services/user';
+import UserForm from '../../../../components/Form/UserForm';
 
 type Role = 'Admin' | 'Customer';
+
+type UserFormData = {
+  avatar?: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  role: Role;
+};
 
 type User = {
   id: string;
@@ -22,6 +31,9 @@ const getInitials = (name: string) => name.split(' ').filter(Boolean).map((part)
 const AdminUser = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
   const { data: usersData, isLoading, isError } = useQuery({
     queryKey: ['admin-users'],

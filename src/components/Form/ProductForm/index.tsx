@@ -3,9 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
 import BasicInfoForm from './BasicInfoForm';
 import VariantsForm from './VariantsForm';
 import { createProduct, createVariants, updateProduct, getAllColors, type CreateProductPayload, type UpdateProductPayload, type VariantInput, type Color } from '../../../services/product';
@@ -18,21 +15,12 @@ export interface ProductFormProps {
   price?: number;
   discount?: number;
   categories?: string[];
-  discount?: number;
-  categories?: string[];
   description?: string;
   status?: 'Active' | 'Inactive';
   images?: string[];
   variants?: Variant[];
-  variants?: Variant[];
   onSubmit?: (data: ProductFormData) => void;
   onCancel?: () => void;
-}
-
-export interface Variant {
-  color: { label: string; hex: string; id?: number };
-  size: number;
-  quantity: number;
 }
 
 export interface Variant {
@@ -47,13 +35,9 @@ export interface ProductFormData {
   price: number;
   discount: number;
   categories: string[];
-  discount: number;
-  categories: string[];
   description: string;
   status: 'Active' | 'Inactive';
   images: string[];
-  variants: Variant[];
-}
   variants: Variant[];
 }
 
@@ -67,12 +51,9 @@ const ProductFrom = ({
   price = 0.0,
   discount = 0,
   categories = [],
-  discount = 0,
-  categories = [],
   description = '',
   status = 'Active',
   images = [],
-  variants = [],
   variants = [],
   onSubmit,
   onCancel,
@@ -115,12 +96,9 @@ const ProductFrom = ({
     price,
     discount,
     categories,
-    discount,
-    categories,
     description,
     status,
     images,
-    variants,
     variants,
   });
 
@@ -139,8 +117,6 @@ const ProductFrom = ({
 
   // Keep form state in sync only when switching between products (productId) or modes
   // This prevents resetting the form while user is typing or selecting colors/sizes
-  // Keep form state in sync only when switching between products (productId) or modes
-  // This prevents resetting the form while user is typing or selecting colors/sizes
   useEffect(() => {
     setFormData({
       productName,
@@ -148,12 +124,9 @@ const ProductFrom = ({
       price,
       discount,
       categories,
-      discount,
-      categories,
       description,
       status,
       images,
-      variants,
       variants,
     });
     setUploadedImages(images);
@@ -166,16 +139,10 @@ const ProductFrom = ({
   }, [productId, mode]);
 
   const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'variants'>, value: any) => {
-  const handleBasicInfoChange = (field: keyof Omit<ProductFormData, 'images' | 'variants'>, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleColorToggle = (colorName: string) => {
-    const newColors = selectedColorsLocal.includes(colorName)
-      ? selectedColorsLocal.filter(c => c !== colorName)
-      : [...selectedColorsLocal, colorName];
-    setSelectedColorsLocal(newColors);
-    regenerateVariants(newColors, selectedSizesLocal);
     const newColors = selectedColorsLocal.includes(colorName)
       ? selectedColorsLocal.filter(c => c !== colorName)
       : [...selectedColorsLocal, colorName];
@@ -219,41 +186,6 @@ const ProductFrom = ({
           ? { ...v, quantity }
           : v
       )
-    const newSizes = selectedSizesLocal.includes(size)
-      ? selectedSizesLocal.filter(s => s !== size)
-      : [...selectedSizesLocal, size];
-    setSelectedSizesLocal(newSizes);
-    regenerateVariants(selectedColorsLocal, newSizes);
-  };
-
-  const regenerateVariants = (colors: string[], sizes: string[]) => {
-    const newVariants: Variant[] = [];
-    colors.forEach(colorName => {
-      const colorObj = availableColors.find(c => c.name === colorName);
-      if (colorObj) {
-        sizes.forEach(size => {
-          const sizeNum = parseInt(size);
-          const existing = variantsLocal.find(
-            v => v.color.label === colorName && v.size === sizeNum
-          );
-          newVariants.push({
-            color: { label: colorObj.name, hex: colorObj.hex, id: colorObj.id },
-            size: sizeNum,
-            quantity: existing?.quantity ?? 0,
-          });
-        });
-      }
-    });
-    setVariantsLocal(newVariants);
-  };
-
-  const handleQuantityChange = (colorLabel: string, size: number, quantity: number) => {
-    setVariantsLocal(prev =>
-      prev.map(v =>
-        v.color.label === colorLabel && v.size === size
-          ? { ...v, quantity }
-          : v
-      )
     );
   };
 
@@ -262,10 +194,7 @@ const ProductFrom = ({
     if (files) {
       const filesArray = Array.from(files);
       const newImages = filesArray.map(file => URL.createObjectURL(file));
-      const filesArray = Array.from(files);
-      const newImages = filesArray.map(file => URL.createObjectURL(file));
       setUploadedImages(prev => [...prev, ...newImages].slice(0, 8));
-      setThumbnailFiles(prev => [...prev, ...filesArray].slice(0, 8));
       setThumbnailFiles(prev => [...prev, ...filesArray].slice(0, 8));
     }
   };
@@ -418,52 +347,7 @@ const ProductFrom = ({
       toast.error('An unexpected error occurred while creating the product.');
       console.error('Failed to submit product:', err);
     }
-      variants: variantsLocal,
-    };
-
-    try {
-      const toastId = toast.loading('Creating product...');
-
-      const productResult = await createProductMutation.mutateAsync(productPayload);
-
-      if (!productResult.success || !productResult.data) {
-        toast.error(productResult.message || 'Failed to create product', { id: toastId });
-        return;
-      }
-
-      if (variantsLocal.length > 0) {
-        toast.loading('Creating variants...', { id: toastId });
-
-        const variantsPayload: VariantInput[] = variantsLocal.map(v => ({
-          size: v.size,
-          quantity: v.quantity,
-          colorID: v.color.id as number,
-        }));
-
-        const variantsResult = await createVariantsMutation.mutateAsync({
-          productID: productResult.data.id,
-          variants: variantsPayload,
-        });
-
-        if (!variantsResult.success) {
-          toast.error(variantsResult.message || 'Failed to create variants', { id: toastId });
-          return;
-        }
-      }
-
-      toast.success('Product created successfully!', { id: toastId });
-      onSubmit?.(finalData);
-      onCancel?.();
-    } catch (err) {
-      toast.error('An unexpected error occurred while creating the product.');
-      console.error('Failed to submit product:', err);
-    }
   };
-
-  const isSubmitDisabled =
-    selectedColorsLocal.length === 0 ||
-    selectedSizesLocal.length === 0 ||
-    isSubmitting;
 
   const isSubmitDisabled =
     selectedColorsLocal.length === 0 ||
@@ -475,7 +359,6 @@ const ProductFrom = ({
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto">
     <div className="w-full bg-white rounded-2xl p-8 border border-neutral-200 shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
@@ -528,8 +411,6 @@ const ProductFrom = ({
           onToggleSize={handleSizeToggle}
           variants={variantsLocal}
           onQuantityChange={handleQuantityChange}
-          variants={variantsLocal}
-          onQuantityChange={handleQuantityChange}
         />
       )}
 
@@ -549,14 +430,7 @@ const ProductFrom = ({
               ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
               : 'bg-[#396254] text-white hover:bg-[#2d4a3f] cursor-pointer'
           }`}
-          disabled={isSubmitDisabled}
-          className={`px-6 py-2.5 rounded-lg font-medium transition-colors ${
-            isSubmitDisabled
-              ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-              : 'bg-[#396254] text-white hover:bg-[#2d4a3f] cursor-pointer'
-          }`}
         >
-          {isSubmitting ? 'Processing...' : isEditMode ? 'Save Changes' : 'Add Product'}
           {isSubmitting ? 'Processing...' : isEditMode ? 'Save Changes' : 'Add Product'}
         </button>
       </div>

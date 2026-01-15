@@ -46,7 +46,7 @@ const AdminOrder = () => {
   const queryClient = useQueryClient();
 
   // Fetch orders from API
-  const { data: ordersData, isLoading, isError, error } = useQuery({
+  const { data: ordersData } = useQuery({
     queryKey: ['orders'],
     queryFn: getAllOrders,
   });

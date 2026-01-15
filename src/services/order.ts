@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
 
 const API_BASE_URL = 'http://localhost:6869/api';
 
@@ -48,6 +49,11 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   price: number;
+}
+
+export interface Payment {
+  id: number;
+  paymentMethod: string;
 }
 
 // Admin order interfaces matching API response
@@ -116,6 +122,12 @@ export interface GetOrderResponse {
   success: boolean;
   message?: string;
   data?: Order;
+}
+
+export interface GetOrdersResponse {
+  success: boolean;
+  message?: string;
+  data?: Order[];
 }
 
 export interface GetAllOrdersResponse {

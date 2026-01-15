@@ -23,7 +23,7 @@ const STATUS_OPTIONS: Array<'pending' | 'confirmed' | 'shipping' | 'delivered' |
   'cancelled',
 ];
 
-const UpdateStatusForm = ({ orderId, currentStatus = 'pending', onCancel, onUpdate }: UpdateStatusFormProps) => {
+const UpdateStatusForm = ({ currentStatus = 'pending', onCancel, onUpdate }: UpdateStatusFormProps) => {
   const [selectedStatus, setSelectedStatus] = useState<'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled'>(currentStatus);
 
   const handleUpdate = () => {

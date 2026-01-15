@@ -1,6 +1,4 @@
-import api from '../api/axios';
-import Token from '../utlis/Token';
-const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+
 import axiosInstance from './axiosInstance';
 import { API_ENDPOINTS } from '../config/api.config';
 
