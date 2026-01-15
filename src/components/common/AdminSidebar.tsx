@@ -81,7 +81,12 @@ const AdminSidebar = ({ collapsed, setCollapsed }: { collapsed: boolean, setColl
         <div className="w-full pb-6 px-3 flex justify-center">
             <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => {
+                    // Import and call logout at runtime
+                    import('../../services/auth').then(({ logout }) => {
+                        logout(); // This will clear tokens and redirect to login
+                    });
+                }}
                 className={`group cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg text-white bg-[#2f4f45] hover:bg-white hover:text-[#2f4f45] transition-colors duration-150 ${collapsed ? 'w-16 justify-center' : 'w-11/12 justify-start'}`}
             >
                 <span className={`flex items-center justify-center shrink-0 transition-all duration-150 ${collapsed ? 'w-8 h-8' : 'w-10 h-10'}`}>

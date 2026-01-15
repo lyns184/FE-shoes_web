@@ -4,13 +4,17 @@ import SignUpForm from '../../components/auth/SignUpForm';
 import LoginForm from '../../components/auth/LoginForm';
 import SocialLogin from '../../components/auth/SocialLogin';
 import logoImg from '../../assets/logo.png';
-
+import checkLogin from '../../utlis/checkLogin';
+import ProtectedRoute from '../../layouts/ProtectedRoute';
 export default function SignUp() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'signup' | 'login'>('signup');
-
+  const [activeTab, setActiveTab] = useState<'signup' | 'login'>('login');
+  if (checkLogin()) {
+    navigate('/') 
+  }
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <ProtectedRoute>    
+      <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="border-b bg-white py-4">
         <div className="container mx-auto px-4 flex items-center justify-center gap-2">
@@ -91,5 +95,6 @@ export default function SignUp() {
         </div>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

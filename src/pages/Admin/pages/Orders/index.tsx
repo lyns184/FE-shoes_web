@@ -223,6 +223,7 @@ const AdminOrder = () => {
                     </td>
                     <td className="py-4 px-6 text-neutral-800">{order.items}</td>
                     <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{order.total.toLocaleString()}₫</td>
+                    <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{order.total.toLocaleString()}₫</td>
                     <td className="py-4 px-6">
                       <span className={`${STATUS_STYLES[order.status]} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{STATUS_LABELS[order.status]}</span>
                     </td>
@@ -344,7 +345,7 @@ const AdminOrder = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      console.log('Order cancelled:', cancelingOrderId);
+
                       setCancelingOrderId(null);
                     }}
                     className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer"

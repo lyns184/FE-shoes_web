@@ -18,6 +18,8 @@ type Product = {
     brand: string;
     categories: string[];
     variants: Variant[];
+    categories: string[];
+    variants: Variant[];
     price: number;
     status: 'Active' | 'Inactive';
 };
@@ -161,6 +163,15 @@ const AdminProducts = () => {
                 { color: { label: 'Red', hex: '#EF4444' }, size: 39, quantity: 7 },
                 { color: { label: 'Red', hex: '#EF4444' }, size: 40, quantity: 10 }
             ],
+            categories: ['Trending', 'Best Seller'],
+            variants: [
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 38, quantity: 5 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 39, quantity: 8 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 12 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 38, quantity: 3 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 39, quantity: 7 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 40, quantity: 10 }
+            ],
             price: 150,
             status: 'Active'
         },
@@ -169,6 +180,13 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Ultraboost Light',
             brand: 'Adidas',
+            categories: ['Best Seller', 'Freeship'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 10 },
+                { color: { label: 'Black', hex: '#000000' }, size: 40, quantity: 15 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 39, quantity: 8 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 12 }
+            ],
             categories: ['Best Seller', 'Freeship'],
             variants: [
                 { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 10 },
@@ -191,6 +209,13 @@ const AdminProducts = () => {
                 { color: { label: 'Green', hex: '#22C55E' }, size: 38, quantity: 4 },
                 { color: { label: 'Green', hex: '#22C55E' }, size: 40, quantity: 11 }
             ],
+            categories: ['Popular', 'New'],
+            variants: [
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 38, quantity: 6 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 9 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 38, quantity: 4 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 40, quantity: 11 }
+            ],
             price: 120,
             status: 'Active'
         },
@@ -199,6 +224,13 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Chuck 70 High',
             brand: 'Converse',
+            categories: ['New', 'Trending'],
+            variants: [
+                { color: { label: 'Brown', hex: '#92400E' }, size: 37, quantity: 2 },
+                { color: { label: 'Brown', hex: '#92400E' }, size: 39, quantity: 5 },
+                { color: { label: 'Black', hex: '#000000' }, size: 37, quantity: 4 },
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 8 }
+            ],
             categories: ['New', 'Trending'],
             variants: [
                 { color: { label: 'Brown', hex: '#92400E' }, size: 37, quantity: 2 },
@@ -221,6 +253,13 @@ const AdminProducts = () => {
                 { color: { label: 'Blue', hex: '#3B82F6' }, size: 38, quantity: 6 },
                 { color: { label: 'Blue', hex: '#3B82F6' }, size: 41, quantity: 10 }
             ],
+            categories: ['Trending', 'Popular'],
+            variants: [
+                { color: { label: 'Green', hex: '#22C55E' }, size: 38, quantity: 7 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 41, quantity: 9 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 38, quantity: 6 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 41, quantity: 10 }
+            ],
             price: 75,
             status: 'Active'
         },
@@ -229,6 +268,13 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
+            categories: ['Best Seller', 'Trending'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 40, quantity: 13 },
+                { color: { label: 'Black', hex: '#000000' }, size: 42, quantity: 14 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 40, quantity: 11 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 42, quantity: 9 }
+            ],
             categories: ['Best Seller', 'Trending'],
             variants: [
                 { color: { label: 'Black', hex: '#000000' }, size: 40, quantity: 13 },
@@ -251,6 +297,13 @@ const AdminProducts = () => {
                 { color: { label: 'Blue', hex: '#3B82F6' }, size: 39, quantity: 5 },
                 { color: { label: 'Blue', hex: '#3B82F6' }, size: 42, quantity: 7 }
             ],
+            categories: ['Trending', 'Freeship'],
+            variants: [
+                { color: { label: 'Green', hex: '#22C55E' }, size: 39, quantity: 8 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 42, quantity: 6 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 39, quantity: 5 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 42, quantity: 7 }
+            ],
             price: 75,
             status: 'Active'
         },
@@ -259,6 +312,13 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
+            categories: ['Popular', 'Best Seller'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 12 },
+                { color: { label: 'Black', hex: '#000000' }, size: 43, quantity: 15 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 39, quantity: 10 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 43, quantity: 8 }
+            ],
             categories: ['Popular', 'Best Seller'],
             variants: [
                 { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 12 },
@@ -275,7 +335,12 @@ const AdminProducts = () => {
     const filteredProducts = useMemo(() => {
         const term = searchTerm.trim().toLowerCase();
         return term
+        const term = searchTerm.trim().toLowerCase();
+        return term
             ? products.filter(product =>
+                product.name.toLowerCase().includes(term) ||
+                product.brand.toLowerCase().includes(term) ||
+                product.categories.some(c => c.toLowerCase().includes(term))
                 product.name.toLowerCase().includes(term) ||
                 product.brand.toLowerCase().includes(term) ||
                 product.categories.some(c => c.toLowerCase().includes(term))
@@ -378,15 +443,19 @@ const AdminProducts = () => {
 
             <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200">
                 <div className="overflow-x-auto overflow-y-visible">
+            <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200">
+                <div className="overflow-x-auto overflow-y-visible">
                     <table className="min-w-full">
                         <thead>
                             <tr className="text-left text-neutral-500 text-lg font-semibold border-b border-neutral-200">
                                 <th className="py-4 px-6">Product</th>
                                 <th className="py-4 px-6">Brand</th>
                                 <th className="py-4 px-6">Categories</th>
+                                <th className="py-4 px-6">Categories</th>
                                 <th className="py-4 px-6">Colors</th>
                                 <th className="py-4 px-6">Sizes</th>
                                 <th className="py-4 px-6 text-right">Price</th>
+                                <th className="py-4 px-6 text-center">Quantity</th>
                                 <th className="py-4 px-6 text-center">Quantity</th>
                                 <th className="py-4 px-6">Status</th>
                                 <th className="py-4 px-6"></th>
@@ -420,9 +489,38 @@ const AdminProducts = () => {
                                     </td>
                                 </tr>
                             )}
+                        <tbody className="text-neutral-900 text-base overflow-visible">
+                            {isLoading && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Loading products...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            {isError && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-red-600">
+                                        Error loading products: {error instanceof Error ? error.message : 'Unknown error'}
+                                    </td>
+                                </tr>
+                            )}
+                            {!isLoading && !isError && paginatedProducts.length === 0 && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        No products found
+                                    </td>
+                                </tr>
+                            )}
                             {paginatedProducts.map((product) => {
                                 const isActive = product.status === 'Active';
                                 return (
+                                    <tr key={product.id} className="border-b border-neutral-200 last:border-b-0 relative">
                                     <tr key={product.id} className="border-b border-neutral-200 last:border-b-0 relative">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
@@ -432,6 +530,11 @@ const AdminProducts = () => {
                                         </td>
                                         <td className="py-4 px-6 font-medium text-neutral-800">{product.brand}</td>
                                         <td className="py-4 px-6">
+                                            <div className="flex flex-wrap gap-2">
+                                                {product.categories.map((cat) => (
+                                                    <span key={cat} className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded-full inline-flex text-sm font-medium">{cat}</span>
+                                                ))}
+                                            </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {product.categories.map((cat) => (
                                                     <span key={cat} className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded-full inline-flex text-sm font-medium">{cat}</span>
@@ -449,10 +552,20 @@ const AdminProducts = () => {
                                                         </div>
                                                     ) : null;
                                                 })}
+                                                {Array.from(new Set(product.variants.map(v => v.color.label))).map((colorLabel) => {
+                                                    const colorObj = product.variants.find(v => v.color.label === colorLabel)?.color;
+                                                    return colorObj ? (
+                                                        <div key={colorLabel} className="flex items-center gap-2 px-2 py-1 rounded-full border border-neutral-200">
+                                                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: colorObj.hex }} />
+                                                            <span className="text-sm text-neutral-700">{colorLabel}</span>
+                                                        </div>
+                                                    ) : null;
+                                                })}
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="flex flex-wrap items-center gap-2">
+                                                {Array.from(new Set(product.variants.map(v => v.size))).map((size) => (
                                                 {Array.from(new Set(product.variants.map(v => v.size))).map((size) => (
                                                     <span key={size} className="px-3 py-1 rounded-full border border-neutral-300 text-sm font-medium text-neutral-700">
                                                         {size}
@@ -460,6 +573,8 @@ const AdminProducts = () => {
                                                 ))}
                                             </div>
                                         </td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{product.price.toLocaleString()}₫</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-center">{product.variants.reduce((total, v) => total + v.quantity, 0)}</td>
                                         <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{product.price.toLocaleString()}₫</td>
                                         <td className="py-4 px-6 font-semibold text-neutral-900 text-center">{product.variants.reduce((total, v) => total + v.quantity, 0)}</td>
                                         <td className="py-4 px-6">

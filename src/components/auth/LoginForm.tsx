@@ -1,77 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/auth';
-
-// Validation functions
-const validatePassword = (password: string): string | null => {
-  if (!password) {
-    return 'Password is required';
-  }
-  if (password.length < 6) {
-    return 'Password must be at least 6 characters long';
-  }
-  if (password.length > 128) {
-    return 'Password must not exceed 128 characters';
-  }
-  return null;
-};
-
-const validateEmail = (email: string): string | null => {
-  if (!email) {
-    return 'Email is required';
-  }
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return 'Please enter a valid email address';
-  }
-  return null;
-};
-
+import { login , verifyEmail } from '../../services/auth';   //Chinh sua laii ham nay 
+import { getSearchQuery } from '../../utlis/getQuery';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { errorMessage , successMessage } from '../../utlis/serverMessage';
+import Token from '../../utlis/Token';
+import toast from 'react-hot-toast';
 export default function LoginForm() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setFieldErrors({});
-    
-    // Validate fields
-    const emailError = validateEmail(formData.email);
-    const passwordError = validatePassword(formData.password);
-    
-    if (emailError || passwordError) {
-      setFieldErrors({
-        email: emailError || undefined,
-        password: passwordError || undefined,
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const result = await login(formData);
-
-      if (result.success) {
+  const { 
+    mutateAsync: loginMutate, 
+    isPending: loginPending 
+  } = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      return await login(data);
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        const { accessToken } = data;
+        // Chỉ lưu accessToken, refreshToken sẽ được server set qua httpOnly cookie
+        Token.setAccessToken(accessToken);
+        
+        // Invalidate và refetch tất cả user-related queries
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['auth'] });
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+        
+        toast.success(successMessage(data));
+        setFormData({ email: '', password: '' }); // reset form
+        
+        // Navigate to home page after successful login
         navigate('/');
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        toast.error(data.message || 'Login failed');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again later.');
+    },
+    onError: (err: any) => {
+      toast.error(errorMessage(err) || 'Login error');
+    }, 
+    retry: 0 
+  });
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const toastID = toast.loading('Signing in...');
+    
+    try {
+      await loginMutate(formData);
     } finally {
-      setIsLoading(false);
+      toast.dismiss(toastID);
     }
   };
 
@@ -81,28 +68,28 @@ export default function LoginForm() {
       ...prev,
       [name]: value,
     }));
-    
-    // Clear field error when user starts typing
-    if (fieldErrors[name as keyof typeof fieldErrors]) {
-      setFieldErrors(prev => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
   };
+  //--------------------------------------FORGOTPASSWORD -------------------------------------------
+  const { mutateAsync: resetPasswordMutate, isPending: resetPasswordPending } = useMutation({
+    mutationFn: async (email: string) => {
+      return { success: true, message: 'Reset link sent to email' };
+    },
+  });
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setResetLoading(true);
-    
+    const toastID = toast.loading('Sending reset email...');
+
     try {
-      // Simulate API call for password reset
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setResetSuccess(true);
-    } catch (err) {
-      setError('Failed to send reset email. Please try again.');
-    } finally {
-      setResetLoading(false);
+      const result = await resetPasswordMutate(resetEmail);
+      if (result.success) {
+        setResetSuccess(true);
+        toast.success(result.message || 'Reset email sent', { id: toastID });
+      } else {
+        toast.error(result.message || 'Failed to send reset email', { id: toastID });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Reset email error', { id: toastID });
     }
   };
 
@@ -110,9 +97,39 @@ export default function LoginForm() {
     setShowForgotPasswordModal(false);
     setResetEmail('');
     setResetSuccess(false);
-    setResetLoading(false);
   };
+  //---------------------------VERIFY ACCOUNT --------------------------------------
+  
+  const token = getSearchQuery('token');
 
+  const { mutateAsync: verifyMutate , isPending : verifyPending } = useMutation({
+    mutationFn: async (token: string) => {
+      const responseData = await verifyEmail(token);
+      return responseData;
+    },
+    onSuccess: (data) => {
+      toast.success(successMessage(data) || "Verify successfully"); 
+      navigate('/login');
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Verify failed");
+    }, 
+    retry: 0 
+  });
+  
+  useEffect(() => {
+    if (!token) return;
+  
+    const toastID = toast.loading('Verifying account...');
+  
+    verifyMutate(token).catch(() => {
+      // Không cần làm gì, onError đã handle toast
+    }).finally(() => {
+        toast.dismiss(toastID); // chỉ remove loading toast, không ảnh hưởng success/error
+      });
+  
+  }, [token, verifyMutate]);
+  
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,25 +139,16 @@ export default function LoginForm() {
           </div>
         )}
 
-        <div>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address*"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full px-4 py-3 border rounded-none focus:outline-none focus:ring-1 transition-colors ${
-              fieldErrors.email 
-                ? 'border-red-400 focus:ring-red-400' 
-                : 'border-gray-300 focus:ring-gray-400'
-            }`}
-            required
-            disabled={isLoading}
-          />
-          {fieldErrors.email && (
-            <p className="text-red-600 text-xs mt-1">{fieldErrors.email}</p>
-          )}
-        </div>
+        <input
+          type="email"
+          name="email"
+          placeholder="Email Address*"
+          value={formData.email}
+          onChange={handleChange}
+          className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+          required
+          disabled={loginPending || verifyPending}
+        />
 
         <div>
           <input
@@ -149,17 +157,10 @@ export default function LoginForm() {
             placeholder="Password*"
             value={formData.password}
             onChange={handleChange}
-            className={`w-full px-4 py-3 border rounded-none focus:outline-none focus:ring-1 transition-colors ${
-              fieldErrors.password 
-                ? 'border-red-400 focus:ring-red-400' 
-                : 'border-gray-300 focus:ring-gray-400'
-            }`}
+            className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
             required
-            disabled={isLoading}
+            disabled={loginPending || verifyPending}
           />
-          {fieldErrors.password && (
-            <p className="text-red-600 text-xs mt-1">{fieldErrors.password}</p>
-          )}
           <div className="flex justify-end mt-2">
             <button 
               type="button" 
@@ -177,10 +178,10 @@ export default function LoginForm() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={loginPending || verifyPending}
           className="w-full bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-sm font-medium text-base transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Signing In...' : 'Sign In'}
+          {(loginPending) ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
@@ -220,7 +221,7 @@ export default function LoginForm() {
                         placeholder="Enter Your Email"
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#396254] focus:border-transparent"
                         required
-                        disabled={resetLoading}
+                        disabled={resetPasswordPending}
                       />
                     </div>
 
@@ -229,16 +230,16 @@ export default function LoginForm() {
                         type="button"
                         onClick={closeForgotPasswordModal}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors cursor-pointer"
-                        disabled={resetLoading}
+                        disabled={resetPasswordPending}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        disabled={resetLoading || !resetEmail.trim()}
+                        disabled={resetPasswordPending || !resetEmail.trim()}
                         className="px-4 py-2 bg-[#396254] text-white rounded hover:bg-[#2d4d3f] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {resetLoading ? 'Sending...' : 'Reset Password'}
+                        {resetPasswordPending ? 'Sending...' : 'Reset Password'}
                       </button>
                     </div>
                   </form>

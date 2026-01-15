@@ -230,6 +230,70 @@ const AdminUser = () => {
           </button>
         </div>
       </section>
+
+      {showUserForm && (
+        <UserForm
+          mode={editingUser ? 'edit' : 'create'}
+          title={editingUser ? 'Edit User' : 'Add New User'}
+          description={editingUser ? 'Update user information' : 'Create a new user'}
+          initialValues={editingUser ? {
+            avatar: editingUser.avatar,
+            fullName: editingUser.name,
+            phone: editingUser.phone,
+            email: editingUser.email,
+            role: editingUser.role,
+          } : undefined}
+          onCancel={() => {
+            setShowUserForm(false);
+            setEditingUser(null);
+          }}
+          onSubmit={(data: UserFormData) => {
+            setShowUserForm(false);
+            setEditingUser(null);
+          }}
+        />
+      )}
+
+      {deleteUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 relative">
+            <button
+              type="button"
+              onClick={() => setDeleteUser(null)}
+              className="absolute top-6 right-6 text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            <div className="p-8">
+              <h2 className="text-3xl font-bold text-neutral-900 mb-4">Delete User?</h2>
+              <p className="text-neutral-700 text-base mb-8">
+                Are you sure you want to delete user <span className="font-bold">"{deleteUser.name}"</span>? This action can't be undone
+              </p>
+
+              <div className="flex gap-4 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDeleteUser(null)}
+                  className="px-6 py-3 border-2 border-neutral-800 text-neutral-800 font-semibold rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteUser(null)}
+                  className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

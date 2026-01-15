@@ -1,4 +1,13 @@
+import api from '../api/axios';
+import Token from '../utlis/Token';
+const API_BASE_URL = 'https://backend_test_api.nport.link/api';
 import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
+
+export interface UserRole {
+  userID: number;
+  roleID: number;
+}
 
 export interface UserProfile {
   id: number;
@@ -7,6 +16,9 @@ export interface UserProfile {
   phone: string;
   address: string;
   avatar?: string;
+  userRoles?: UserRole[];
+  createdAt?: string;
+  verify?: boolean;
 }
 
 export interface Order {
@@ -22,6 +34,7 @@ export interface OrdersResponse {
     orders: Order[];
     pagination?: any;
   };
+  message?: string;
 }
 
 export interface UserProfileResponse {
@@ -34,7 +47,6 @@ export interface UpdateProfileData {
   name?: string;
   phone?: string;
   address?: string;
-  avatar?: string;
 }
 
 export interface UpdateProfileResponse {
@@ -93,95 +105,159 @@ export async function getAllUsers(): Promise<AdminUsersResponse> {
 
 export async function getUserProfile(): Promise<UserProfileResponse> {
   try {
-    const response = await axiosInstance.get('/user/profile');
+    const response = await axiosInstance.get(API_ENDPOINTS.USER.PROFILE);
 
     if (response.data.success && response.data.data) {
+      // Cache profile data
       localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      return response.data;
     }
-    return response.data;
-  } catch (error) {
-    // Fallback: Return profile data from login info
-    const userEmail = localStorage.getItem('userEmail');
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    // Try to use cached profile
     const savedProfile = localStorage.getItem('userProfile');
-    
     if (savedProfile) {
-      return {
-        success: true,
-        data: JSON.parse(savedProfile),
-      };
+      try {
+        const cachedData = JSON.parse(savedProfile);
+        return {
+          success: true,
+          data: cachedData,
+          message: 'Using cached data - server unavailable',
+        };
+      } catch (parseError) {
+      }
     }
     
+    // Return error - no fake data
     return {
-      success: true,
-      data: {
-        id: 1,
-        name: 'Người Dùng',
-        email: userEmail || 'user@example.com',
-        phone: '0123456789',
-        address: '123 Đường Chính, TP HCM, Việt Nam',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-      },
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch profile. Please try again later.',
     };
   }
 }
 
 export async function updateUserProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
   try {
-    const response = await axiosInstance.put('/user/profile', data);
+    const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_PROFILE, data);
 
     if (response.data.success && response.data.data) {
-      localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      const updatedProfile = response.data.data;
+      
+      // Get current cached profile to preserve avatar and other fields
+      const currentProfile = localStorage.getItem('userProfile');
+      let profileToCache = updatedProfile;
+      
+      if (currentProfile) {
+        try {
+          const parsed = JSON.parse(currentProfile);
+          // Merge with existing data to preserve avatar and other fields
+          profileToCache = { ...parsed, ...updatedProfile };
+        } catch (parseError) {
+          // If parsing fails, just use the updated profile
+          profileToCache = updatedProfile;
+        }
+      }
+      
+      // Update cached profile with merged data
+      localStorage.setItem('userProfile', JSON.stringify(profileToCache));
+      return response.data;
     }
-    return response.data;
-  } catch (error) {
-    // Fallback: Return success for testing and save to localStorage
-    const savedProfile = localStorage.getItem('userProfile');
-    const currentProfile = savedProfile ? JSON.parse(savedProfile) : {
-      id: 1,
-      name: 'Người Dùng',
-      email: localStorage.getItem('userEmail') || 'user@example.com',
-      phone: '0123456789',
-      address: '123 Đường Chính, TP HCM, Việt Nam',
-    };
     
-    const updatedProfile = {
-      ...currentProfile,
-      ...data,
-    };
-    
-    localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
     return {
-      success: true,
-      message: 'Profile updated successfully',
-      data: updatedProfile,
+      success: false,
+      message: error.response?.data?.message || 'Failed to update profile. Please try again.',
+    };
+  }
+}
+
+export interface UpdateAvatarResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    avatar: string;
+    url: string;
+  };
+}
+
+export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarResponse> {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    
+    const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_AVATAR, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.data.success) {
+      // Update avatar in cached profile
+      const currentProfile = localStorage.getItem('userProfile');
+      if (currentProfile) {
+        try {
+          const profileData = JSON.parse(currentProfile);
+          // Update avatar URL with cache busting
+          const avatarUrl = response.data.data?.url || response.data.data?.avatar;
+          if (avatarUrl) {
+            profileData.avatar = avatarUrl.includes('?') 
+              ? `${avatarUrl}&t=${Date.now()}` 
+              : `${avatarUrl}?t=${Date.now()}`;
+            localStorage.setItem('userProfile', JSON.stringify(profileData));
+          }
+        } catch (parseError) {
+          // If caching fails, still return success response
+          console.error('Failed to cache avatar update:', parseError);
+        }
+      }
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update avatar. Please try again.',
     };
   }
 }
 
 export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse> {
   try {
-    const response = await axiosInstance.get('/user/orders', {
+    // Changed from /api/user/orders to /api/order (user's orders)
+    const response = await axiosInstance.get(API_ENDPOINTS.ORDER.BASE, {
       params: {
         page,
         limit,
       },
     });
 
-    return response.data;
-  } catch (error) {
+    if (response.data.success) {
+      return {
+        success: true,
+        data: {
+          orders: response.data.data || [],
+        },
+      };
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
     return {
       success: false,
       data: {
         orders: [],
       },
+      message: error.response?.data?.message || 'Failed to fetch orders',
     };
   }
 }
 
 export async function forgotPassword(data: ForgotPasswordData): Promise<ApiResponse> {
   try {
-    const response = await axiosInstance.post('/user/forgot-password', data);
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.FORGOT_PASSWORD, data);
     return response.data;
   } catch (error) {
     return {
@@ -193,7 +269,7 @@ export async function forgotPassword(data: ForgotPasswordData): Promise<ApiRespo
 
 export async function resetPassword(data: ResetPasswordData): Promise<ApiResponse> {
   try {
-    const response = await axiosInstance.post('/user/reset-password', data);
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.RESET_PASSWORD, data);
     return response.data;
   } catch (error) {
     return {

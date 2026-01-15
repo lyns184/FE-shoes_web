@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { register } from '../../services/auth';
-
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 export default function SignUpForm() {
   const [formData, setFormData] = useState({
     name: '',
@@ -13,22 +14,45 @@ export default function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const {data , mutateAsync , isPending} = useMutation({
+    mutationFn: async (data : any) => 
+    {
+      const responseData = await register(data) 
+      return responseData
+    }, 
+  })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     setIsLoading(true);
-
+    const toastID = toast.loading('Signing up...')
     try {
-      const result = await register({
+      const result = await mutateAsync({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
         address: formData.address,
       });
-
+      if (result.success) {
+        toast.success(result.message || 'Registration successful! Please check your email.', {
+          id: toastID 
+        })
+        // setSuccess(result.message || 'Registration successful! Please check your email to verify your account.'); 
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          address: '',
+          agreedToTerms: false,
+        });
+      }
+      else {
+        setError(result.message || 'Registration failed. Please try again.');
+      }
+      /*
       if (result.success) {
         setSuccess(result.message || 'Registration successful! Please check your email to verify your account.');
         setFormData({
@@ -41,10 +65,13 @@ export default function SignUpForm() {
         });
       } else {
         setError(result.message || 'Registration failed. Please try again.');
-      }
-    } catch (err) {
+      }   */ 
+    } catch (err) 
+    {
       setError('An error occurred. Please try again later.');
-    } finally {
+    } 
+    finally 
+    {
       setIsLoading(false);
     }
   };
@@ -79,7 +106,7 @@ export default function SignUpForm() {
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
-        disabled={isLoading}
+        disabled={isPending}
       />
 
       <input
@@ -90,7 +117,7 @@ export default function SignUpForm() {
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
-        disabled={isLoading}
+        disabled={isPending}
       />
 
       <input
@@ -101,7 +128,7 @@ export default function SignUpForm() {
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
-        disabled={isLoading}
+        disabled={isPending}
       />
 
       <input
@@ -112,7 +139,7 @@ export default function SignUpForm() {
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
-        disabled={isLoading}
+        disabled={isPending}
       />
 
       <div>
@@ -124,7 +151,7 @@ export default function SignUpForm() {
           onChange={handleChange}
           className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
           required
-          disabled={isLoading}
+          disabled={isPending}
         />
         <p className="text-xs text-gray-600 mt-2 font-bold">
           At least 12 characters, 1 uppercase letter, 1 number & 1 symbol
@@ -140,7 +167,7 @@ export default function SignUpForm() {
           onChange={handleChange}
           className="mt-1 w-4 h-4 accent-teal-700"
           required
-          disabled={isLoading}
+          disabled={isPending}
         />
         <label htmlFor="terms" className="text-sm text-gray-700 leading-tight">
           I have read and agree to the Terms and Privacy
@@ -149,10 +176,10 @@ export default function SignUpForm() {
 
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isPending}
         className="w-full bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-sm font-medium text-base transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? 'Signing Up...' : 'Sign Up'}
+        {isPending ? 'Signing Up...' : 'Sign Up'}
       </button>
     </form>
   );

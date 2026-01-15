@@ -1,82 +1,125 @@
 import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
 
-export interface CartItemAPI {
-  productVariantID: number;
-  productName: string;
-  size: string;
-  color: string;
+// Interfaces based on database structure
+export interface CartProduct {
+  id: number;
+  name: string;
+  price: string;
+  description: string;
+  discount: number;
+  category: string[];
+  thumbnail: string | null;
+}
+
+export interface CartItemColor {
+  id: number;
+  name: string;
+  hex: string;
+}
+
+// ProductVariant 
+export interface CartProductVariant {
+  id: number;
+  size: number;
   quantity: number;
-  price: number;
-  thumbnail: string;
+  product: CartProduct;
+  color: CartItemColor;
 }
 
-export interface CartData {
-  items: CartItemAPI[];
-  total: number;
-}
-
-export interface CartResponse {
-  success: boolean;
-  data?: CartData;
-  message?: string;
+// API response format for cart item 
+export interface ApiCartItem {
+  id: number;              // cartProduct id
+  quantity: number;
+  productVariant: CartProductVariant;
 }
 
 export interface AddToCartData {
-  productVariantID: number;
-  quantity: number;
+  productVariantID: number;       // API now requires productVariantID
+  quantity?: number;              // Quantity to set (for update) or add
 }
 
-export interface UpdateCartData {
-  quantity: number;
+export interface GetCartResponse {
+  success: boolean;
+  message?: string;
+  cartID?: number;
 }
 
-export async function getCart(): Promise<CartResponse> {
+export interface GetAllProductsResponse {
+  success: boolean;
+  message?: string;
+  data?: ApiCartItem[];
+}
+
+export interface CartActionResponse {
+  success: boolean;
+  message?: string;
+}
+
+export async function getCart(): Promise<GetCartResponse> {
   try {
-    const response = await axiosInstance.get('/cart');
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.get(API_ENDPOINTS.CART.BASE);
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
     return {
       success: false,
-      message: 'Failed to fetch cart',
+      message: error.response?.data?.message || 'Failed to fetch cart',
     };
   }
 }
 
-export async function addToCart(data: AddToCartData): Promise<CartResponse> {
+export async function getAllCartProducts(): Promise<GetAllProductsResponse> {
   try {
-    const response = await axiosInstance.post('/cart/items', data);
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.get(API_ENDPOINTS.CART.ALL_PRODUCTS);
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
     return {
       success: false,
-      message: 'Failed to add to cart',
+      message: error.response?.data?.message || 'Failed to fetch cart products',
     };
   }
 }
 
-export async function updateCartItem(
-  productVariantID: number,
-  data: UpdateCartData
-): Promise<CartResponse> {
+export async function addToCart(data: AddToCartData): Promise<CartActionResponse> {
   try {
-    const response = await axiosInstance.put(`/cart/items/${productVariantID}`, data);
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.post(API_ENDPOINTS.CART.ADD_PRODUCT, data);
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
     return {
       success: false,
-      message: 'Failed to update cart item',
+      message: error.response?.data?.message || 'Failed to add to cart',
     };
   }
 }
 
-export async function removeFromCart(productVariantID: number): Promise<CartResponse> {
+export async function removeFromCart(cartItemId: number): Promise<CartActionResponse> {
   try {
-    const response = await axiosInstance.delete(`/cart/items/${productVariantID}`);
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.delete(API_ENDPOINTS.CART.REMOVE_PRODUCT(cartItemId));
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
     return {
       success: false,
-      message: 'Failed to remove from cart',
+      message: error.response?.data?.message || 'Failed to remove from cart',
     };
   }
 }

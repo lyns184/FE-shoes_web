@@ -1,9 +1,12 @@
 import { RouterProvider } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { router } from './router'
-import { CartProvider } from './hooks/useCart'
 import { UserProvider } from './hooks/UserContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from './lib/queryClient'
+import { BuyNowProvider } from './hooks/useBuyNow'
 import 'nprogress/nprogress.css'
 import './App.css'
 
@@ -23,13 +26,17 @@ function App() {
   )
   try {
     return (
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <UserProvider>
-          <CartProvider>
-            <RouterProvider router={router} />
-          </CartProvider>
-        </UserProvider>
-      </GoogleOAuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <Toaster position="top-center" reverseOrder={false} />
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <UserProvider>
+            <BuyNowProvider>
+              <RouterProvider router={router} />
+            </BuyNowProvider>
+          </UserProvider>
+        </GoogleOAuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     )
   } catch (error) {
     console.error('App Error:', error);

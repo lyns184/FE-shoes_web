@@ -18,9 +18,30 @@ axios.interceptors.request.use(
   }
 );
 
+// Interfaces based on API docs
 export interface CreateOrderData {
   shippingAddress: string;
-  paymentMethod: string;
+  paymentMethod: 'COD' | 'credit_card';
+  items: Array<{
+    productVariantID: number;
+    quantity: number;
+    price: string;
+  }>;
+}
+
+export interface OrderItemVariant {
+  id: number;
+  size: number;
+  product: {
+    id: number;
+    name: string;
+    thumbnail: string[];
+  };
+  color: {
+    id: number;
+    name: string;
+    hex: string;
+  };
 }
 
 export interface OrderItem {
@@ -72,21 +93,23 @@ export interface Order {
   status: string;
   shippingAddress: string;
   createdAt: string;
-  payment: {
-    paymentMethod: string;
+  payments: Payment[];
+  orderItems: OrderItem[];
+}
+
+export interface OrderWithUser extends Order {
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
   };
-  items: OrderItem[];
-  total: number;
 }
 
 export interface CreateOrderResponse {
   success: boolean;
   message?: string;
-  data?: {
-    orderId: number;
-    status: string;
-    total: number;
-  };
+  data?: Order;
 }
 
 export interface GetOrderResponse {
@@ -138,12 +161,34 @@ export async function getAllOrders(): Promise<GetAllOrdersResponse> {
 
 export async function createOrder(data: CreateOrderData): Promise<CreateOrderResponse> {
   try {
-    const response = await axiosInstance.post('/orders', data);
-    return response.data;
-  } catch (error) {
+    const response = await axiosInstance.post(API_ENDPOINTS.ORDER.BASE, data);
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
     return {
       success: false,
-      message: 'Failed to create order',
+      message: error.response?.data?.message || 'Failed to create order',
+    };
+  }
+}
+
+export async function getOrders(): Promise<GetOrdersResponse> {
+  try {
+    const response = await axiosInstance.get(API_ENDPOINTS.ORDER.BASE);
+    
+    if (response.data.success) {
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch orders',
     };
   }
 }

@@ -11,7 +11,6 @@ import Search from '../pages/Search';
 import Profile from '../pages/Profile';
 import Admin from '../pages/Admin';
 import NotFound from '../pages/NotFound';
-import Brands from '../pages/Brands';
 import Trending from '../pages/Trending';
 import New from '../pages/New';
 import Deals from '../pages/Deals';

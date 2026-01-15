@@ -1,5 +1,8 @@
-import axiosInstance from './axiosInstance';
+import { successMessage , errorMessage } from "../utlis/serverMessage";
+const API_BASE_URL = 'http://localhost:6869/api';
+import Token from '../utlis/Token';
 
+import api from "../api/axios";
 interface RegisterData {
   name: string;
   email: string;
@@ -20,131 +23,106 @@ interface AuthResponse {
   accessToken?: string;
   refreshToken?: string;
 }
-
-export async function register(data: RegisterData): Promise<AuthResponse> {
-  try {
-    const response = await axiosInstance.post('/auth/register', data);
-    return response.data;
-  } catch (error) {
-    // Fallback: Allow registration with any data for testing
-    // In production, this should not be here
-    return {
-      success: true,
-      message: 'Registration successful. Please log in.',
-    };
+export async function register(data: RegisterData)  //: Promise<AuthResponse> 
+{
+  try 
+  {
+    const responseData = await api.post('/api/auth/register' , data) 
+    return responseData.data
+  } 
+  catch (err) 
+  {
+    const serverMessage = errorMessage(err) //Nhan vao error va trich xuat ra message tu error    
+    throw new Error(serverMessage || 'Register failed');
   }
 }
-
-export async function verifyEmail(token: string): Promise<AuthResponse> {
-  try {
-    const response = await axiosInstance.get(`/auth/verify?token=${token}`);
-    return response.data;
-  } catch (error) {
-    return {
-      success: false,
-      message: 'Email verification failed',
-    };
+export async function login(data: LoginData) //: Promise<AuthResponse> 
+{
+  try 
+  {
+    const responseData = await api.post('/api/auth/login' , data) 
+    return responseData.data 
+  } 
+  catch (err) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
   }
 }
+export async function verifyEmail(token: string)//: Promise<AuthResponse> 
+{
+  //Ham dung de verify email 
+  try 
+  {
+    const responseData = await api.get(`/api/auth/verify?token=${token}`) 
+    return responseData.data
+  } 
+  catch (err : any) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
+  } 
+}
 
-export async function login(data: LoginData): Promise<AuthResponse> {
+
+
+export async function logout(): Promise<void> {
   try {
-    const response = await axiosInstance.post('/auth/login', data);
-
-    if (response.data.success && response.data.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-      localStorage.setItem('userEmail', data.email);
-      
-      // Set cookie for refreshToken (cho axios interceptor)
-      document.cookie = `refreshToken=${response.data.refreshToken}; path=/; secure; samesite=strict`;
-    }
-
-    return response.data;
+    // Gọi API logout để server xóa refresh token
+    await api.post('/api/auth/logout');
   } catch (error) {
-    // Fallback: Allow login with any email/password for testing
-    // In production, this should not be here
-    const fakeToken = btoa(`${data.email}:${Date.now()}`);
-    localStorage.setItem('accessToken', fakeToken);
-    localStorage.setItem('refreshToken', fakeToken);
-    localStorage.setItem('userEmail', data.email);
+    // Logout API failed, clearing tokens anyway
+  } finally {
+    // Xóa token phía client
+    Token.clearAllTokens();
     
-    // Set cookie for refreshToken fallback
-    document.cookie = `refreshToken=${fakeToken}; path=/; secure; samesite=strict`;
-    
-    return {
-      success: true,
-      message: 'Login successful',
-      accessToken: fakeToken,
-      refreshToken: fakeToken,
-    };
+    // Chuyển hướng về trang login
+    window.location.href = '/login';
   }
-}
-
-export function logout(): void {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('userProfile');
-  
-  // Xóa cookie refreshToken
-  document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 
 export function checkAuth(): boolean {
-  const token = localStorage.getItem('accessToken');
-  return token !== null;
+  const token = Token.getAccessToken();
+  return token !== null && token !== undefined;
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem('accessToken');
+  return Token.getAccessToken() || null;
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem('refreshToken');
+  return Token.getRefreshToken() || null;
 }
 
-export async function refreshToken(): Promise<AuthResponse> {
+export async function refreshAccessToken(): Promise<string | null> {
   try {
-    const response = await axiosInstance.get('/auth/refresh-token');
+    // API refresh-token sẽ đọc refreshToken từ httpOnly cookie
+    const response = await api.get('/api/auth/refresh-token');
     
     if (response.data.success && response.data.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
-      if (response.data.refreshToken) {
-        localStorage.setItem('refreshToken', response.data.refreshToken);
-      }
+      const newAccessToken = response.data.accessToken;
+      Token.setAccessToken(newAccessToken);
+      return newAccessToken;
     }
     
-    return response.data;
+    return null;
   } catch (error) {
-    return {
-      success: false,
-      message: 'Failed to refresh token',
-    };
+    return null;
   }
 }
 
-export async function googleLogin(credential: string): Promise<AuthResponse> {
-  try {
-    const response = await axiosInstance.post('/auth/google', { credential });
-
-    if (response.data.success && response.data.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-    }
-
-    return response.data;
-  } catch (error) {
-    // Fallback: Allow Google login for testing when API fails
-    const fakeToken = btoa(`google:${Date.now()}`);
-    localStorage.setItem('accessToken', fakeToken);
-    localStorage.setItem('refreshToken', fakeToken);
-    
-    return {
-      success: true,
-      message: 'Login successful',
-      accessToken: fakeToken,
-      refreshToken: fakeToken,
-    };
+export async function googleLogin(code : string) //: Promise<AuthResponse> 
+{
+  try 
+  { 
+    const responseData = await api.post('/api/auth/login-google' , {
+      code 
+    }) 
+    return responseData.data 
+  } 
+  catch (err : any) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
   }
 }

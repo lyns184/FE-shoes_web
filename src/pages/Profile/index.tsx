@@ -6,7 +6,7 @@ import EditProfileModal from '../../components/common/EditProfileModal';
 import ShippingAddressModal from '../../components/common/ShippingAddressModal';
 import { useUser } from '../../hooks/UserContext';
 import { checkAuth, logout } from '../../services/auth';
-
+import checkLogin from '../../utlis/checkLogin';
 // Interface for flattened order items
 interface OrderItem {
   orderId: number;
@@ -18,13 +18,13 @@ interface OrderItem {
   date: string;
   status: string;
   orderTotal: number;
-  productVariantID?: number;
   size?: string;
   color?: string;
   quantity?: number;
 }
 
-export default function ProfilePage() {
+export default function ProfilePage() 
+{
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState<'profile' | 'history'>('profile');
@@ -33,15 +33,23 @@ export default function ProfilePage() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ORDERS_PER_PAGE = 10;
-  const { profile, orders, isLoading, updateProfile, setDefaultShippingAddress, removeDefaultShippingAddress } = useUser();
+  const { profile, orders, isLoading, error, updateProfile, updateAvatar, setDefaultShippingAddress, removeDefaultShippingAddress, clearAll, refreshProfile, refreshOrders } = useUser();
 
   useEffect(() => {
-    if (!checkAuth()) {
+    if (!checkLogin()) {
       navigate('/login');
     }
   }, [navigate]);
 
-  // Handle tab from URL parameter and auto-open address modal if coming from checkout
+  // Separate effect to refresh data when component mounts
+  useEffect(() => {
+    if (checkLogin()) {
+      refreshProfile();
+      refreshOrders();
+    }
+  }, []); // Empty dependency array - only run once on mount
+
+  // Handle tab from URL parameter and auto-open address modal if redirected from checkout
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'history') {
@@ -49,7 +57,7 @@ export default function ProfilePage() {
       setCurrentPage(1); // Reset to page 1 when entering history
     }
     
-    // If coming from checkout to add address, auto-open the modal
+    // If redirected from checkout to add address, auto-open the modal
     const fromCheckout = searchParams.get('addAddress');
     if (fromCheckout === 'true') {
       setActiveMenu('profile');
@@ -72,16 +80,15 @@ export default function ProfilePage() {
 
   // Flatten orders to show each product separately
   const allOrderItems: OrderItem[] = orders.flatMap(order => {
-    // Handle both old format (with items array) and new API format
+    // Handle both legacy format (with items array) and new API format
     if (order.items && order.items.length > 0) {
       return order.items.map(item => ({
         orderId: order.id,
         id: item.id,
         name: item.name,
         description: item.description || '',
-        price: item.price,
+        price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : (item.price || 0),
         thumbnail: item.thumbnail || '/shoe.png',
-        productVariantID: item.productVariantID,
         size: item.size,
         color: item.color,
         quantity: item.quantity,
@@ -91,7 +98,7 @@ export default function ProfilePage() {
           day: 'numeric'
         }),
         status: order.status,
-        orderTotal: order.total
+        orderTotal: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0)
       }));
     }
     // For API format without items, show the order itself
@@ -100,7 +107,7 @@ export default function ProfilePage() {
       id: order.id,
       name: `Order #${order.id}`,
       description: order.status,
-      price: order.total,
+      price: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0),
       thumbnail: '/shoe.png',
       date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -108,7 +115,7 @@ export default function ProfilePage() {
         day: 'numeric'
       }) : 'N/A',
       status: order.status,
-      orderTotal: order.total
+      orderTotal: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0)
     }];
   });
 
@@ -135,42 +142,64 @@ export default function ProfilePage() {
 
   return (
     <MainLayout>
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-4 sm:py-8">
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Loading...</div>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <div className="text-red-600 text-lg">⚠️ {error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-[#396254] text-white rounded-lg hover:bg-[#2d4f42] transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : !profile ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Please log in to view your profile</div>
         </div>
       ) : (
-      <div className="flex gap-8">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
         {/* Sidebar */}
-        <aside className="w-56 bg-white border border-gray-200 h-fit rounded-lg">
-          <div className="p-6 border-b border-gray-200 text-center">
-            <div className="w-16 h-16 bg-[#396254] rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+        <aside className="w-full lg:w-56 bg-white border border-gray-200 h-fit rounded-lg">
+          <div className="p-4 sm:p-6 border-b border-gray-200 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#396254] rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold mx-auto mb-2 sm:mb-3 overflow-hidden">
               {profile.avatar ? (
-                <img src={profile.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                <img 
+                  key={profile.avatar}
+                  src={profile.avatar} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    console.error('Avatar load error:', profile.avatar);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    // Avatar loaded successfully
+                  }}
+                />
               ) : (
                 profile.name.charAt(0).toUpperCase()
               )}
             </div>
-            <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">{profile.name}</h2>
           </div>
 
           <nav className="p-4">
             <button
               onClick={() => setActiveMenu('profile')}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 text-left rounded-lg transition-colors cursor-pointer ${
                 activeMenu === 'profile'
                   ? 'bg-[#396254] text-white'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <FiUser className="w-5 h-5 shrink-0" />
+              <FiUser className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <div>
-                <div className="font-medium">Profile</div>
+                <div className="font-medium text-sm sm:text-base">Profile</div>
                 <div
                   className={`text-xs ${
                     activeMenu === 'profile' ? 'text-green-100' : 'text-gray-500'
@@ -183,13 +212,13 @@ export default function ProfilePage() {
 
             <button
               onClick={() => setActiveMenu('history')}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors mt-2 cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 text-left rounded-lg transition-colors mt-2 cursor-pointer ${
                 activeMenu === 'history'
                   ? 'bg-[#396254] text-white'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <FiPackage className="w-5 h-5 shrink-0" />
+              <FiPackage className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <div>
                 <div className="font-medium">History</div>
                 <div
@@ -203,9 +232,9 @@ export default function ProfilePage() {
             </button>
 
             <button
-              onClick={() => {
-                logout();
-                navigate('/login');
+              onClick={async () => {
+                clearAll(); // Clear user context data
+                await logout(); // This will clear tokens and redirect to login
               }}
               className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors mt-2 text-gray-700 hover:bg-gray-50"
             >
@@ -235,25 +264,37 @@ export default function ProfilePage() {
 
               {/* Avatar and Personal Information */}
               <div className="flex items-start gap-8 mb-8">
-                <div className="w-24 h-24 bg-[#396254] rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0">
+                <div className="w-24 h-24 bg-[#396254] rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0 overflow-hidden">
                   {profile.avatar ? (
-                    <img src={profile.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img 
+                      key={profile.avatar}
+                      src={profile.avatar} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('Avatar load error:', profile.avatar);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        // Avatar loaded successfully
+                      }}
+                    />
                   ) : (
                     profile.name.charAt(0).toUpperCase()
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-8 flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 flex-1">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Name</h3>
-                  <p className="text-gray-600">{profile.name}</p>
+                  <p className="text-gray-600 break-words">{profile.name}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Phone Number</h3>
-                  <p className="text-gray-600">{profile.phone}</p>
+                  <p className="text-gray-600 break-words">{profile.phone}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 mb-2">Email Address</h3>
-                  <p className="text-gray-600">{profile.email}</p>
+                  <p className="text-gray-600 break-all text-sm">{profile.email}</p>
                 </div>
                 </div>
               </div>
@@ -387,7 +428,9 @@ export default function ProfilePage() {
                               </div>
                             </td>
                             <td className="py-4 px-4 text-gray-700">{item.date}</td>
-                            <td className="py-4 px-4 text-gray-700">${item.price}</td>
+                            <td className="py-4 px-4 text-gray-700">
+                              ${typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}
+                            </td>
                             <td className="py-4 px-4">
                               <span
                                 className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusStyles(
@@ -467,6 +510,7 @@ export default function ProfilePage() {
           isOpen={showEditModal}
           profile={profile}
           onSave={updateProfile}
+          onUpdateAvatar={updateAvatar}
           onClose={() => setShowEditModal(false)}
         />
       )}
@@ -484,7 +528,7 @@ export default function ProfilePage() {
             postalCode: data.postalCode
           });
           
-          // If coming from checkout, go back after saving
+          // Navigate back to checkout if address was added from checkout flow
           const fromCheckout = searchParams.get('addAddress');
           if (fromCheckout === 'true') {
             setTimeout(() => navigate('/checkout'), 500);

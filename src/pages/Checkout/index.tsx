@@ -5,7 +5,7 @@ import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
 import OrderConfirmedModal from '../../components/common/OrderConfirmedModal';
-import { useCart } from '../../hooks/useCart';
+import { useCart, usePlaceOrder } from '../../hooks';
 import { useUser } from '../../hooks/UserContext';
 import { getRelatedProducts } from '../../data/products';
 
@@ -28,7 +28,8 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { items, removeFromCart, updateQuantity, subtotal, buyNowItem, setBuyNowItem, clearCart } = useCart();
-  const { addOrder, profile } = useUser();
+  const { profile } = useUser();
+  const placeOrderMutation = usePlaceOrder();
   const recommendedProducts = getRelatedProducts(0, 4);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [addressMode, setAddressMode] = useState<'default' | 'new'>('new'); // Always start with 'new'
@@ -59,7 +60,7 @@ export default function Checkout() {
     setAddressMode(mode);
     
     if (mode === 'default' && profile?.defaultShippingAddress) {
-      // Auto-fill with default address
+      // Auto-populate form with default shipping address
       setDeliveryInfo({
         firstName: profile.name,
         lastName: profile.defaultShippingAddress.postalCode,
@@ -69,7 +70,7 @@ export default function Checkout() {
         note: ''
       });
     } else if (mode === 'new') {
-      // Clear for manual input
+      // Clear form fields for manual address entry
       setDeliveryInfo({
         firstName: '',
         lastName: '', // postcode
@@ -81,8 +82,8 @@ export default function Checkout() {
     }
   };
 
-  const handlePlaceOrder = () => {
-    // Validate required fields based on address mode
+  const handlePlaceOrder = async () => {
+    // Validate required delivery information fields based on address selection mode
     if (addressMode === 'default' && !profile?.defaultShippingAddress) {
       alert('Please set a default address in your profile or choose to enter new information');
       return;
@@ -95,27 +96,31 @@ export default function Checkout() {
       }
     }
 
-    // Create order
-    addOrder({
-      items: checkoutItems,
-      deliveryInfo,
-      paymentMethod,
-      total
-    });
+    try {
+      // Call API to place order
+      await placeOrderMutation.mutateAsync({
+        items: checkoutItems,
+        deliveryInfo,
+        paymentMethod,
+        total
+      });
 
-    // Clear cart if not buy now
-    if (!buyNowItem) {
-      clearCart();
-    } else {
-      setBuyNowItem(null);
+      // Clear shopping cart only if not a buy-now item
+      if (!buyNowItem) {
+        clearCart();
+      } else {
+        setBuyNowItem(null);
+      }
+
+      // Display order confirmation modal via URL parameter
+      setSearchParams({ orderConfirmed: 'true' });
+    } catch (error: any) {
+      alert(error.message || 'Failed to place order. Please try again.');
     }
-
-    // Show order confirmed modal via URL param
-    setSearchParams({ orderConfirmed: 'true' });
   };
 
   const handleContinueShopping = () => {
-    // Clear orderConfirmed param and navigate to home
+    // Clear order confirmation param and return to home page
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('orderConfirmed');
     setSearchParams(newParams, { replace: true });
@@ -123,14 +128,14 @@ export default function Checkout() {
   };
 
   const handleViewOrder = () => {
-    // Clear orderConfirmed param and navigate to profile
+    // Clear order confirmation param and navigate to order history
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('orderConfirmed');
     setSearchParams(newParams, { replace: true });
     navigate('/profile?tab=history', { replace: true });
   };
 
-  // Use buyNowItem if available, otherwise use cart items
+  // Use quick purchase item if available, otherwise use shopping cart items
   const checkoutItems = buyNowItem ? [buyNowItem] : items;
   const checkoutSubtotal = buyNowItem 
     ? buyNowItem.price * buyNowItem.quantity 
@@ -180,16 +185,16 @@ export default function Checkout() {
             setBuyNowItem(null);
             navigate('/');
           }}
-          className="mb-6 flex items-center gap-2 text-gray-700 hover:text-[#396254] transition-colors cursor-pointer"
+          className="mb-4 sm:mb-6 flex items-center gap-2 text-gray-700 hover:text-[#396254] transition-colors cursor-pointer"
         >
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#396254] hover:bg-[#2d4d3f] transition-colors">
-            <FiChevronLeft className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#396254] hover:bg-[#2d4d3f] transition-colors">
+            <FiChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
           </div>
-          <span className="font-semibold">Shopping Continue</span>
+          <span className="font-semibold text-sm sm:text-base">Shopping Continue</span>
         </button>
 
         {/* Main Grid - Cart Items + Delivery Info */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
           {/* Left Column - Cart Items + Cart Total */}
           <div>
             {/* Cart Header */}
@@ -248,7 +253,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1) });
                         } else {
-                          updateQuantity(item.id, item.size, item.color, -1);
+                          updateQuantity(item.id, item.productVariantID || 0, -1, item.quantity);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
@@ -261,7 +266,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: buyNowItem.quantity + 1 });
                         } else {
-                          updateQuantity(item.id, item.size, item.color, 1);
+                          updateQuantity(item.id, item.productVariantID || 0, 1, item.quantity);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
@@ -283,7 +288,7 @@ export default function Checkout() {
                           setBuyNowItem(null);
                           navigate('/');
                         } else {
-                          removeFromCart(item.id, item.size, item.color);
+                          removeFromCart(item.id);
                         }
                       }}
                       className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
@@ -496,41 +501,41 @@ export default function Checkout() {
 
               {/* Card Payment Form */}
               {paymentMethod === 'card' && (
-                <div className="space-y-4 p-6 border border-gray-200 rounded-lg bg-[#396254]">
+                <div className="space-y-4 p-4 sm:p-6 border border-gray-200 rounded-lg bg-[#396254]">
                   <div>
-                    <label className="text-white text-sm font-medium mb-2 block">Name On Card</label>
+                    <label className="text-white text-xs sm:text-sm font-medium mb-2 block">Name On Card</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
-                      placeholder="Name"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                      placeholder="Enter cardholder name"
                     />
                   </div>
                   
                   <div>
-                    <label className="text-white text-sm font-medium mb-2 block">Card Number</label>
+                    <label className="text-white text-xs sm:text-sm font-medium mb-2 block">Card Number</label>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
                       placeholder="1111 2222 3333 4444"
                       maxLength={19}
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-white text-sm font-medium mb-2 block">Expiration date</label>
+                      <label className="text-white text-xs sm:text-sm font-medium mb-2 block">Expiration date</label>
                       <input
                         type="text"
-                        className="w-full px-4 py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
-                        placeholder="mm/yy"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                        placeholder="MM/YY"
                         maxLength={5}
                       />
                     </div>
                     <div>
-                      <label className="text-white text-sm font-medium mb-2 block">CVV</label>
+                      <label className="text-white text-xs sm:text-sm font-medium mb-2 block">CVV</label>
                       <input
                         type="text"
-                        className="w-full px-4 py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border-0 bg-white focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
                         placeholder="123"
                         maxLength={3}
                       />
@@ -555,18 +560,30 @@ export default function Checkout() {
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-6">You Might Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            {recommendedProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                id={product.id}
-                name={product.name}
-                description={`${product.brand} - ${product.category}`}
-                price={product.price}
-                thumbnail={product.image}
-                badge={product.category === 'best-seller' ? 'Best Seller' : undefined}
-                freeship={product.category === 'freeship'}
-              />
-            ))}
+            {recommendedProducts.map((product) => {
+              const getCategoryDisplay = (category: string) => {
+                switch(category) {
+                  case 'trending': return 'Trending';
+                  case 'best-seller': return 'Best Seller';
+                  case 'freeship': return 'Free Ship';
+                  case 'new': return 'New';
+                  case 'popular': return 'Popular';
+                  default: return category;
+                }
+              };
+              return (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  name={product.name}
+                  description={`${product.brand} - ${product.category}`}
+                  price={product.price}
+                  thumbnail={product.image}
+                  category={getCategoryDisplay(product.category)}
+                  freeship={product.category === 'freeship'}
+                />
+              );
+            })}
           </div>
         </div>
 
