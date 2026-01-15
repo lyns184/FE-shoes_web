@@ -1,5 +1,6 @@
 import { getAccessToken } from './auth';
-
+import api from '../api/axios';
+import Token from '../utlis/Token';
 const API_BASE_URL = 'https://backend_test_api.nport.link/api';
 
 export interface UserProfile {
@@ -68,14 +69,21 @@ function getHeaders(): HeadersInit {
   };
 }
 
-export async function getUserProfile(): Promise<UserProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/user/profile`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+export async function getUserProfile()//: Promise<UserProfileResponse> 
+{
+  try 
+  {
+    const responseData = await api.get('/api/user/profile' , {
+      headers: {
+        Authorization: `Bearer ${Token.getAccessToken()}`
+      }
+    })
+    return responseData.data 
+  } 
+  catch {
+    console.log('>>> User eror') 
+    throw new Error() 
+  }
 }
 
 export async function updateUserProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
@@ -89,7 +97,8 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<Update
   return result;
 }
 
-export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse> {
+export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse>    //Lay cac thong tin dang nhap cua nguoi dung 
+{
   const params = new URLSearchParams();
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());

@@ -6,7 +6,7 @@ import EditProfileModal from '../../components/common/EditProfileModal';
 import ShippingAddressModal from '../../components/common/ShippingAddressModal';
 import { useUser } from '../../hooks/UserContext';
 import { checkAuth, logout } from '../../services/auth';
-
+import checkLogin from '../../utlis/checkLogin';
 // Interface for flattened order items
 interface OrderItem {
   orderId: number;
@@ -24,7 +24,8 @@ interface OrderItem {
   quantity?: number;
 }
 
-export default function ProfilePage() {
+export default function ProfilePage() 
+{
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState<'profile' | 'history'>('profile');
@@ -36,7 +37,7 @@ export default function ProfilePage() {
   const { profile, orders, isLoading, updateProfile, setDefaultShippingAddress, removeDefaultShippingAddress } = useUser();
 
   useEffect(() => {
-    if (!checkAuth()) {
+    if (!checkLogin()) {
       navigate('/login');
     }
   }, [navigate]);

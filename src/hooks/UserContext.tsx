@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import type { CartItem } from './useCart';
 import { getUserProfile, updateUserProfile, getUserOrders } from '../services/user';
-import { checkAuth } from '../services/auth';
+import checkLogin from '../utlis/checkLogin';
 
 export interface DeliveryInfo {
   firstName: string;
@@ -52,9 +52,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch profile on mount if authenticated
+  // Fetch profile on mount if logged in
   const refreshProfile = async () => {
-    if (!checkAuth()) {
+    if (!checkLogin()) {
+      // User not logged in
+      setProfile(null);
+      setOrders([]);
       setIsLoading(false);
       return;
     }
@@ -63,25 +66,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const result = await getUserProfile();
       if (result.success && result.data) {
         setProfile(result.data);
+      } else {
+        setProfile(null);
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
+      setProfile(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch orders
   const refreshOrders = async () => {
-    if (!checkAuth()) return;
+    if (!checkLogin()) {
+      setOrders([]);
+      return;
+    }
 
     try {
       const result = await getUserOrders();
       if (result.success && result.data.orders) {
         setOrders(result.data.orders);
+      } else {
+        setOrders([]);
       }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      setOrders([]);
     }
   };
 

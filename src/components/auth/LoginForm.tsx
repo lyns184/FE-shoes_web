@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/auth';
-
+import { login , verifyEmail } from '../../services/auth';   //Chinh sua laii ham nay 
+import { getSearchQuery } from '../../utlis/getQuery';
+import { useMutation } from '@tanstack/react-query';
+import { errorMessage , successMessage } from '../../utlis/serverMessage';
+import Token from '../../utlis/Token';
+import toast from 'react-hot-toast';
 export default function LoginForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -9,29 +13,43 @@ export default function LoginForm() {
     password: '',
   });
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const result = await login(formData);
-
-      if (result.success) {
+  //--------------------------------------------LOGIN MUTATE--------------------------------------------------
+  const { 
+    mutateAsync: loginMutate, 
+    isPending: loginPending 
+  } = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      return await login(data);
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        const { accessToken, refreshToken } = data;
+        Token.setToken('accessToken', accessToken);
+        Token.setToken('refreshToken', refreshToken);
+        toast.success(successMessage(data));
+        setFormData({ email: '', password: '' }); // reset form
         navigate('/');
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        toast.error(data.message || 'Login failed');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again later.');
+    },
+    onError: (err: any) => {
+      toast.error(errorMessage(err) || 'Login error');
+    }, 
+    retry: 0 
+  });
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const toastID = toast.loading('Signing in...');
+    
+    try {
+      await loginMutate(formData);
     } finally {
-      setIsLoading(false);
+      toast.dismiss(toastID);
     }
   };
 
@@ -42,19 +60,27 @@ export default function LoginForm() {
       [name]: value,
     }));
   };
+  //--------------------------------------FORGOTPASSWORD -------------------------------------------
+  const { mutateAsync: resetPasswordMutate, isPending: resetPasswordPending } = useMutation({
+    mutationFn: async (email: string) => {
+      return { success: true, message: 'Reset link sent to email' };
+    },
+  });
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setResetLoading(true);
-    
+    const toastID = toast.loading('Sending reset email...');
+
     try {
-      // Simulate API call for password reset
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setResetSuccess(true);
-    } catch (err) {
-      setError('Failed to send reset email. Please try again.');
-    } finally {
-      setResetLoading(false);
+      const result = await resetPasswordMutate(resetEmail);
+      if (result.success) {
+        setResetSuccess(true);
+        toast.success(result.message || 'Reset email sent', { id: toastID });
+      } else {
+        toast.error(result.message || 'Failed to send reset email', { id: toastID });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Reset email error', { id: toastID });
     }
   };
 
@@ -62,9 +88,39 @@ export default function LoginForm() {
     setShowForgotPasswordModal(false);
     setResetEmail('');
     setResetSuccess(false);
-    setResetLoading(false);
   };
+  //---------------------------VERIFY ACCOUNT --------------------------------------
+  
+  const token = getSearchQuery('token');
 
+  const { mutateAsync: verifyMutate , isPending : verifyPending } = useMutation({
+    mutationFn: async (token: string) => {
+      const responseData = await verifyEmail(token);
+      return responseData;
+    },
+    onSuccess: (data) => {
+      toast.success(successMessage(data) || "Verify successfully"); 
+      navigate('/login');
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Verify failed");
+    }, 
+    retry: 0 
+  });
+  
+  useEffect(() => {
+    if (!token) return;
+  
+    const toastID = toast.loading('Verifying account...');
+  
+    verifyMutate(token).catch(() => {
+      // Không cần làm gì, onError đã handle toast
+    }).finally(() => {
+        toast.dismiss(toastID); // chỉ remove loading toast, không ảnh hưởng success/error
+      });
+  
+  }, [token, verifyMutate]);
+  
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,7 +138,7 @@ export default function LoginForm() {
           onChange={handleChange}
           className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
           required
-          disabled={isLoading}
+          disabled={loginPending || verifyPending}
         />
 
         <div>
@@ -94,7 +150,7 @@ export default function LoginForm() {
             onChange={handleChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
             required
-            disabled={isLoading}
+            disabled={loginPending || verifyPending}
           />
           <div className="flex justify-end mt-2">
             <button 
@@ -113,10 +169,10 @@ export default function LoginForm() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={loginPending || verifyPending}
           className="w-full bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-sm font-medium text-base transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Signing In...' : 'Sign In'}
+          {(loginPending) ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
@@ -156,7 +212,7 @@ export default function LoginForm() {
                         placeholder="Enter Your Email"
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#396254] focus:border-transparent"
                         required
-                        disabled={resetLoading}
+                        disabled={resetPasswordPending}
                       />
                     </div>
 
@@ -165,16 +221,16 @@ export default function LoginForm() {
                         type="button"
                         onClick={closeForgotPasswordModal}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors cursor-pointer"
-                        disabled={resetLoading}
+                        disabled={resetPasswordPending}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        disabled={resetLoading || !resetEmail.trim()}
+                        disabled={resetPasswordPending || !resetEmail.trim()}
                         className="px-4 py-2 bg-[#396254] text-white rounded hover:bg-[#2d4d3f] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {resetLoading ? 'Sending...' : 'Reset Password'}
+                        {resetPasswordPending ? 'Sending...' : 'Reset Password'}
                       </button>
                     </div>
                   </form>

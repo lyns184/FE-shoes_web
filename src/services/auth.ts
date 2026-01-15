@@ -1,5 +1,7 @@
+import { successMessage , errorMessage } from "../utlis/serverMessage";
 const API_BASE_URL = 'http://localhost:6869/api';
 
+import api from "../api/axios";
 interface RegisterData {
   name: string;
   email: string;
@@ -20,47 +22,48 @@ interface AuthResponse {
   accessToken?: string;
   refreshToken?: string;
 }
-
-export async function register(data: RegisterData): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
-}
-
-export async function verifyEmail(token: string): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/verify?token=${token}`, {
-    method: 'GET',
-  });
-
-  const result = await response.json();
-  return result;
-}
-
-export async function login(data: LoginData): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-
-  if (result.success && result.accessToken) {
-    localStorage.setItem('accessToken', result.accessToken);
-    localStorage.setItem('refreshToken', result.refreshToken);
+export async function register(data: RegisterData)  //: Promise<AuthResponse> 
+{
+  try 
+  {
+    const responseData = await api.post('/api/auth/register' , data) 
+    return responseData.data
+  } 
+  catch (err) 
+  {
+    const serverMessage = errorMessage(err) //Nhan vao error va trich xuat ra message tu error    
+    throw new Error(serverMessage || 'Register failed');
   }
-
-  return result;
 }
+export async function login(data: LoginData) //: Promise<AuthResponse> 
+{
+  try 
+  {
+    const responseData = await api.post('/api/auth/login' , data) 
+    return responseData.data 
+  } 
+  catch (err) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
+  }
+}
+export async function verifyEmail(token: string)//: Promise<AuthResponse> 
+{
+  //Ham dung de verify email 
+  try 
+  {
+    const responseData = await api.get(`/api/auth/verify?token=${token}`) 
+    return responseData.data
+  } 
+  catch (err : any) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
+  } 
+}
+
+
 
 export function logout(): void {
   localStorage.removeItem('accessToken');
@@ -80,21 +83,19 @@ export function getRefreshToken(): string | null {
   return localStorage.getItem('refreshToken');
 }
 
-export async function googleLogin(credential: string): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/google`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ credential }),
-  });
-
-  const result = await response.json();
-
-  if (result.success && result.accessToken) {
-    localStorage.setItem('accessToken', result.accessToken);
-    localStorage.setItem('refreshToken', result.refreshToken);
+export async function googleLogin(code : string) //: Promise<AuthResponse> 
+{
+  try 
+  { 
+    const responseData = await api.post('/api/auth/login-google' , {
+      code 
+    }) 
+    console.log('>>> Thogn tin dang nhap bang google: ' , responseData.data) 
+    return responseData.data 
+  } 
+  catch (err : any) 
+  {
+    const serverMessage = errorMessage(err) 
+    throw new Error(serverMessage)
   }
-
-  return result;
 }
