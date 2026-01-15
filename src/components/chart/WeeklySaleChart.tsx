@@ -48,6 +48,7 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
   const options = {
     responsive: true,
     maintainAspectRatio: true,
+    aspectRatio: 2.5,
     plugins: {
       legend: {
         display: false,
@@ -57,10 +58,10 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
         mode: 'index' as const,
         intersect: false,
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleFont: { size: 14, weight: 'bold' as const },
-        bodyFont: { size: 13 },
-        cornerRadius: 8,
+        padding: 10,
+        titleFont: { size: 12, weight: 'bold' as const },
+        bodyFont: { size: 11 },
+        cornerRadius: 6,
         callbacks: {
           title: function (context: any) {
             return context[0].label;
@@ -80,8 +81,9 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
           callback: function (value: any) {
             return `${(value * 1000).toLocaleString()}₫`;
           },
-          font: { size: 12 },
+          font: { size: 10 },
           color: '#9ca3af',
+          padding: 5,
         },
         grid: {
           color: 'rgba(229, 231, 235, 0.5)',
@@ -90,8 +92,9 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
       },
       x: {
         ticks: {
-          font: { size: 12 },
+          font: { size: 10 },
           color: '#6b7280',
+          padding: 5,
         },
         grid: {
           display: false,
@@ -102,10 +105,10 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm w-full">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-neutral-900 mb-2">Sales Overview</h2>
-        <p className="text-neutral-600">Weekly sales performance</p>
+    <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm w-full">
+      <div className="mb-5">
+        <h2 className="text-lg font-bold text-neutral-900 mb-1">Sales Overview</h2>
+        <p className="text-sm text-neutral-600">Weekly sales performance</p>
       </div>
       <div className="w-full">
         <Line data={chartData} options={options} />

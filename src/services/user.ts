@@ -57,6 +57,40 @@ export interface ApiResponse {
   message: string;
 }
 
+// Admin users list
+export interface AdminUser {
+  id?: number;
+  role?: string;
+  name: string;
+  email: string;
+  avatar: string;
+  phone: string;
+  address: string;
+  totalOrders: number;
+  totalSpent: number;
+  createdAt: string;
+}
+
+export interface AdminUsersResponse {
+  success: boolean;
+  data: AdminUser[];
+  message?: string;
+  httpStatus?: number;
+}
+
+export async function getAllUsers(): Promise<AdminUsersResponse> {
+  try {
+    const response = await axiosInstance.get('/admin/user/user');
+    return response.data as AdminUsersResponse;
+  } catch (error: any) {
+    return {
+      success: false,
+      data: [],
+      message: error?.response?.data?.message || 'Failed to fetch users',
+    };
+  }
+}
+
 export async function getUserProfile(): Promise<UserProfileResponse> {
   try {
     const response = await axiosInstance.get('/user/profile');

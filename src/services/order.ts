@@ -186,3 +186,50 @@ export async function updateOrderStatus(
     };
   }
 }
+
+// Admin dashboard stats
+export interface AdminDashboardStats {
+  totalOrders: number;
+  totalUsers: number;
+  totalSpent: number;
+}
+
+export interface AdminDashboardResponse {
+  success: boolean;
+  data: AdminDashboardStats;
+  message?: string;
+  httpStatus?: number;
+}
+
+export async function getAdminDashboardStats(): Promise<AdminDashboardResponse> {
+  try {
+    const response = await axios.get<AdminDashboardResponse>(
+      `${API_BASE_URL}/admin/dashboard`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch dashboard stats',
+        data: {
+          totalOrders: 0,
+          totalUsers: 0,
+          totalSpent: 0,
+        },
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred',
+      data: {
+        totalOrders: 0,
+        totalUsers: 0,
+        totalSpent: 0,
+      },
+    };
+  }
+}
