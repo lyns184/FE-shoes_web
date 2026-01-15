@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import ProductForm, { type ProductFormData } from '../../../../components/Form/ProductForm';
-import { getAllProducts, type Product as ApiProduct } from '../../../../services/product';
+import { deleteProduct as deleteProductApi, getAllProducts, getProductById, type Product as ApiProduct } from '../../../../services/product';
 
 type Variant = {
     color: { label: string; hex: string };
@@ -21,18 +22,53 @@ type Product = {
     status: 'Active' | 'Inactive';
 };
 
+type EditableProduct = {
+    id: number;
+    name: string;
+    brand: string; // brand id as string
+    price: number;
+    discount: number;
+    categories: string[];
+    description: string;
+    status: 'Active' | 'Inactive';
+    images: string[];
+    variants: Variant[];
+};
+
 const AdminProducts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [openMenu, setOpenMenu] = useState<string | null>(null);
-    const [deleteProduct, setDeleteProduct] = useState<{ name: string } | null>(null);
+    const [openMenu, setOpenMenu] = useState<number | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
     const [showProductForm, setShowProductForm] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [editingProduct, setEditingProduct] = useState<EditableProduct | null>(null);
+
+    const queryClient = useQueryClient();
 
     // Fetch products from API using TanStack Query
     const { data: productsData, isLoading, isError, error } = useQuery({
         queryKey: ['products'],
         queryFn: getAllProducts,
+    });
+
+    const {
+        mutate: deleteProduct,
+        isPending: isDeleting,
+    } = useMutation({
+        mutationFn: (productId: number) => deleteProductApi(productId),
+        onSuccess: (result) => {
+            if (!result.success) {
+                toast.error(result.message || 'Failed to delete product');
+                return;
+            }
+            toast.success('Product deleted');
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            setDeleteTarget(null);
+        },
+        onError: (err) => {
+            console.error('Failed to delete product', err);
+            toast.error('An unexpected error occurred while deleting product');
+        },
     });
 
     // Transform API data to match component's Product type
@@ -60,7 +96,54 @@ const AdminProducts = () => {
 
     useEffect(() => {
         console.log('Products data loaded:', products);
-    }, [products]);
+        console.log('Total products from API:', productsData?.data?.length);
+        console.log('Active:', productsData?.data?.filter(p => p.active).length);
+        console.log('Inactive:', productsData?.data?.filter(p => !p.active).length);
+    }, [products, productsData]);
+
+    const handleEditClick = async (productId: number) => {
+        setOpenMenu(null);  // Đóng menu ngay lập tức
+        const toastId = toast.loading('Loading product...');
+
+        try {
+            const result = await getProductById(productId);
+
+            if (!result.success || !result.data) {
+                toast.error(result.message || 'Failed to load product', { id: toastId });
+                return;
+            }
+
+            const apiProduct = result.data;
+
+            const mappedProduct: EditableProduct = {
+                id: apiProduct.id,
+                name: apiProduct.name,
+                brand: apiProduct.brand.id.toString(),
+                price: parseFloat(apiProduct.price),
+                discount: (apiProduct.discount ?? 0) * 100,
+                categories: apiProduct.category || [],
+                description: apiProduct.description || '',
+                status: apiProduct.active ? 'Active' : 'Inactive',
+                images: apiProduct.thumbnail?.map(t => t.url) || [],
+                variants: apiProduct.productVariants.map(v => ({
+                    color: {
+                        label: v.color.name,
+                        hex: v.color.hex,
+                        id: v.color.id,
+                    },
+                    size: v.size,
+                    quantity: v.quantity,
+                })),
+            };
+
+            setEditingProduct(mappedProduct);
+            setShowProductForm(true);  // Mở modal sau khi tất cả state đã cập nhật
+            toast.dismiss(toastId);
+        } catch (err) {
+            console.error('Failed to load product detail', err);
+            toast.error('An unexpected error occurred while loading product', { id: toastId });
+        }
+    };
 
     // Mock data for development (remove when API is ready)
     const mockProducts = useMemo<Product[]>(() => ([
@@ -281,7 +364,10 @@ const AdminProducts = () => {
                 <div className="flex items-center">
                     <button
                         type="button"
-                        onClick={() => setShowProductForm(true)}
+                        onClick={() => {
+                            setEditingProduct(null);
+                            setShowProductForm(true);
+                        }}
                         className="bg-[#396254] hover:bg-[#2f4f45] text-white text-lg font-semibold px-6 py-4 rounded-2xl shadow-sm transition-colors duration-150 flex items-center gap-3 cursor-pointer"
                     >
                         <span className="text-xl leading-none">+</span>
@@ -383,7 +469,7 @@ const AdminProducts = () => {
                                             <div className="relative">
                                                 <button 
                                                     type="button" 
-                                                    onClick={() => setOpenMenu(openMenu === product.name ? null : product.name)}
+                                                    onClick={() => setOpenMenu(openMenu === product.id ? null : product.id)}
                                                     className="hover:bg-neutral-100 p-2 rounded-lg transition-colors cursor-pointer" 
                                                     aria-label="More options"
                                                 >
@@ -394,15 +480,11 @@ const AdminProducts = () => {
                                                     </svg>
                                                 </button>
 
-                                                {openMenu === product.name && (
+                                                {openMenu === product.id && (
                                                     <div className="absolute right-0 bottom-full mb-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
                                                         <button
                                                             type="button"
-                                                            onClick={() => {
-                                                                setOpenMenu(null);
-                                                                setEditingProduct(product);
-                                                                setShowProductForm(true);
-                                                            }}
+                                                            onClick={() => handleEditClick(product.id)}
                                                             className="w-full flex items-center gap-3 px-4 py-3 text-neutral-800 hover:bg-neutral-50 transition-colors font-medium text-left cursor-pointer"
                                                         >
                                                             <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -416,7 +498,7 @@ const AdminProducts = () => {
                                                                 e.stopPropagation();
                                                                 e.preventDefault();
                                                                 setOpenMenu(null);
-                                                                setDeleteProduct({ name: product.name });
+                                                                setDeleteTarget({ id: product.id, name: product.name });
                                                             }}
                                                             className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors font-medium text-left cursor-pointer border-t border-neutral-200"
                                                         >
@@ -492,9 +574,11 @@ const AdminProducts = () => {
                         productName={editingProduct?.name}
                         brand={editingProduct?.brand}
                         price={editingProduct?.price}
+                        discount={editingProduct?.discount}
                         categories={editingProduct?.categories}
+                        description={editingProduct?.description}
                         status={editingProduct?.status}
-                        images={editingProduct ? [editingProduct.image] : []}
+                        images={editingProduct?.images}
                         variants={editingProduct?.variants}
                         onCancel={() => {
                             setShowProductForm(false);
@@ -510,12 +594,12 @@ const AdminProducts = () => {
             </div>
         )}
 
-        {deleteProduct && (
+        {deleteTarget && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 relative">
                     <button
                         type="button"
-                        onClick={() => setDeleteProduct(null)}
+                        onClick={() => setDeleteTarget(null)}
                         className="absolute top-6 right-6 text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
                         aria-label="Close"
                     >
@@ -527,23 +611,24 @@ const AdminProducts = () => {
                     <div className="p-8">
                         <h2 className="text-3xl font-bold text-neutral-900 mb-4">Delete Product?</h2>
                         <p className="text-neutral-700 text-base mb-8">
-                            Are you sure you want to delete product <span className="font-bold">"{deleteProduct.name}"</span>? This action can't be undone
+                            Are you sure you want to delete product <span className="font-bold">"{deleteTarget.name}"</span>? This action can't be undone
                         </p>
 
                         <div className="flex gap-4 justify-end">
                             <button
                                 type="button"
-                                onClick={() => setDeleteProduct(null)}
+                                onClick={() => setDeleteTarget(null)}
                                 className="px-6 py-3 border-2 border-neutral-800 text-neutral-800 font-semibold rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setDeleteProduct(null)}
-                                className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer"
+                                onClick={() => deleteTarget && deleteProduct(deleteTarget.id)}
+                                disabled={isDeleting}
+                                className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                Delete
+                                {isDeleting ? 'Deleting...' : 'Delete'}
                             </button>
                         </div>
                     </div>

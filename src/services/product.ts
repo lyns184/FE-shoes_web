@@ -102,6 +102,18 @@ export interface CreateProductPayload {
   thumbnailFiles?: File[];
 }
 
+export interface UpdateProductPayload {
+  name?: string;
+  description?: string;
+  price?: number;
+  active?: boolean;
+  brandID?: number;
+  category?: string[];
+  discount?: number;
+  thumbnailFiles?: File[];
+  remove_public_id?: string[];
+}
+
 interface ProductResponse {
   success: boolean;
   message: string;
@@ -241,6 +253,96 @@ export async function getAllBrands(): Promise<BrandsResponse> {
       success: false,
       message: 'An unexpected error occurred',
       data: []
+    };
+  }
+}
+
+export async function getProductById(id: number): Promise<ProductResponse> {
+  try {
+    const response = await axios.get<ProductResponse>(`${API_BASE_URL}/product/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch product',
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred',
+    };
+  }
+}
+
+export async function updateProduct(id: number, payload: UpdateProductPayload): Promise<ProductResponse> {
+  const formData = new FormData();
+  
+  if (payload.name !== undefined) formData.append('name', payload.name);
+  if (payload.description !== undefined) formData.append('description', payload.description);
+  if (payload.price !== undefined) formData.append('price', String(payload.price));
+  if (payload.active !== undefined) formData.append('active', String(payload.active));
+  if (payload.brandID !== undefined) formData.append('brandID', String(payload.brandID));
+  if (payload.category !== undefined) {
+    payload.category.forEach(cat => formData.append('category', cat));
+  }
+  if (payload.discount !== undefined) {
+    formData.append('discount', String(payload.discount));
+  }
+  if (payload.remove_public_id !== undefined) {
+    payload.remove_public_id.forEach(publicId => formData.append('remove_public_id', publicId));
+  }
+  if (payload.thumbnailFiles !== undefined) {
+    payload.thumbnailFiles.forEach(file => {
+      formData.append('thumbnail', file);
+    });
+  }
+
+  try {
+    const response = await axios.put<ProductResponse>(
+      `${API_BASE_URL}/admin/products/${id}`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to update product',
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred',
+    };
+  }
+}
+
+export async function deleteProduct(id: number): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await axios.delete<{ success: boolean; message: string }>(
+      `${API_BASE_URL}/admin/products/${id}`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to delete product',
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred',
     };
   }
 }

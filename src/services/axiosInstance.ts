@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 
 // Tạo axios instance
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: 'https://backend_test_api.nport.link/api',
+  baseURL: 'http://localhost:6869/api',
   headers: {
     'Content-Type': 'application/json',
   },

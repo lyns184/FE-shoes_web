@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import BasicInfoForm from './BasicInfoForm';
 import VariantsForm from './VariantsForm';
-import { createProduct, createVariants, getAllColors, type CreateProductPayload, type VariantInput, type Color } from '../../../services/product';
+import { createProduct, createVariants, updateProduct, getAllColors, type CreateProductPayload, type UpdateProductPayload, type VariantInput, type Color } from '../../../services/product';
 
 export interface ProductFormProps {
   mode?: 'create' | 'edit';
@@ -74,6 +74,13 @@ const ProductFrom = ({
     mutationFn: createProduct,
   });
 
+  const updateProductMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateProductPayload }) => updateProduct(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+
   const createVariantsMutation = useMutation({
     mutationFn: createVariants,
     onSuccess: () => {
@@ -98,6 +105,8 @@ const ProductFrom = ({
   // Variants state
   const [uploadedImages, setUploadedImages] = useState<string[]>(images);
   const [thumbnailFiles, setThumbnailFiles] = useState<File[]>([]);
+  const [removedPublicIds, setRemovedPublicIds] = useState<string[]>([]);
+  const [originalImages, setOriginalImages] = useState<string[]>(images);
   const [selectedColorsLocal, setSelectedColorsLocal] = useState<string[]>(
     Array.from(new Set(variants.map(v => v.color.label)))
   );
@@ -122,6 +131,8 @@ const ProductFrom = ({
     });
     setUploadedImages(images);
     setThumbnailFiles([]);
+    setRemovedPublicIds([]);
+    setOriginalImages(images);
     setSelectedColorsLocal(Array.from(new Set(variants.map(v => v.color.label))));
     setSelectedSizesLocal(Array.from(new Set(variants.map(v => v.size.toString()))).sort((a, b) => parseInt(a) - parseInt(b)));
     setVariantsLocal(variants);
@@ -189,13 +200,82 @@ const ProductFrom = ({
   };
 
   const handleRemoveImage = (index: number) => {
+    const imageUrl = uploadedImages[index];
+    
+    // Check if this is an original image (from API)
+    if (originalImages.includes(imageUrl)) {
+      // Extract public_id from Cloudinary URL
+      // Format: https://res.cloudinary.com/.../CloudinaryShoeStore/filename.jpg
+      const match = imageUrl.match(/\/CloudinaryShoeStore\/[^\/]+/);
+      if (match) {
+        const publicId = match[0].substring(1); // Remove leading '/'
+        setRemovedPublicIds(prev => [...prev, publicId]);
+      }
+    }
+    
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
     setThumbnailFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const isSubmitting = createProductMutation.isPending || createVariantsMutation.isPending;
+  const isSubmitting = createProductMutation.isPending || createVariantsMutation.isPending || updateProductMutation.isPending;
+
+  const handleUpdate = async () => {
+    if (!productId) {
+      toast.error('Product ID is required for update');
+      return;
+    }
+
+    const brandId = Number(formData.brand);
+    if (!Number.isFinite(brandId)) {
+      toast.error('Brand ID must be a number');
+      return;
+    }
+
+    const updatePayload: UpdateProductPayload = {
+      name: formData.productName,
+      description: formData.description,
+      price: formData.price,
+      active: formData.status === 'Active',
+      brandID: brandId,
+      category: formData.categories,
+      discount: formData.discount > 0 ? formData.discount / 100 : undefined,
+      thumbnailFiles: thumbnailFiles.length > 0 ? thumbnailFiles : undefined,
+      remove_public_id: removedPublicIds.length > 0 ? removedPublicIds : undefined,
+    };
+
+    const finalData: ProductFormData = {
+      ...formData,
+      images: uploadedImages,
+      variants: variantsLocal,
+    };
+
+    try {
+      const toastId = toast.loading('Updating product...');
+
+      const productResult = await updateProductMutation.mutateAsync({
+        id: Number(productId),
+        payload: updatePayload,
+      });
+
+      if (!productResult.success) {
+        toast.error(productResult.message || 'Failed to update product', { id: toastId });
+        return;
+      }
+
+      toast.success('Product updated successfully!', { id: toastId });
+      onSubmit?.(finalData);
+      onCancel?.();
+    } catch (err) {
+      toast.error('An unexpected error occurred while updating the product.');
+      console.error('Failed to update product:', err);
+    }
+  };
 
   const handleSubmit = async () => {
+    if (isEditMode) {
+      await handleUpdate();
+      return;
+    }
     if (selectedColorsLocal.length === 0 || selectedSizesLocal.length === 0) {
       toast.error('Please select at least one color and one size');
       return;
