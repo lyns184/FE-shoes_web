@@ -2,6 +2,8 @@ import { getAccessToken } from './auth';
 import api from '../api/axios';
 import Token from '../utlis/Token';
 const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
 
 export interface UserProfile {
   id: number;
@@ -25,6 +27,7 @@ export interface OrdersResponse {
     orders: Order[];
     pagination?: any;
   };
+  message?: string;
 }
 
 export interface UserProfileResponse {
@@ -60,83 +63,128 @@ export interface ApiResponse {
   message: string;
 }
 
-// Helper to add auth header
-function getHeaders(): HeadersInit {
-  const token = getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
+export async function getUserProfile(): Promise<UserProfileResponse> {
+  try {
+    console.log('Fetching user profile from server...');
+    const response = await axiosInstance.get(API_ENDPOINTS.USER.PROFILE);
 
-export async function getUserProfile()//: Promise<UserProfileResponse> 
-{
-  try 
-  {
-    const responseData = await api.get('/api/user/profile' , {
-      headers: {
-        Authorization: `Bearer ${Token.getAccessToken()}`
+    if (response.data.success && response.data.data) {
+      console.log('User profile fetched successfully:', response.data.data);
+      // Cache profile data
+      localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch profile from server');
+    console.error('Request URL:', API_ENDPOINTS.USER.PROFILE);
+    console.error('Error:', error.response?.data || error.message);
+    
+    // Try to use cached profile
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      console.warn('Using cached profile data from previous request');
+      try {
+        const cachedData = JSON.parse(savedProfile);
+        return {
+          success: true,
+          data: cachedData,
+          message: 'Using cached data - server unavailable',
+        };
+      } catch (parseError) {
+        console.error('Failed to parse cached profile');
       }
-    })
-    return responseData.data 
-  } 
-  catch {
-    console.log('>>> User eror') 
-    throw new Error() 
+    }
+    
+    // Return error - no fake data
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch profile. Please try again later.',
+    };
   }
 }
 
 export async function updateUserProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/user/profile`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
+  try {
+    console.log('Updating user profile data...');
+    const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_PROFILE, data);
 
-  const result = await response.json();
-  return result;
+    if (response.data.success && response.data.data) {
+      console.log('User profile updated successfully');
+      // Update cached profile
+      localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to update profile');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update profile. Please try again.',
+    };
+  }
 }
 
-export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse>    //Lay cac thong tin dang nhap cua nguoi dung 
-{
-  const params = new URLSearchParams();
-  if (page) params.append('page', page.toString());
-  if (limit) params.append('limit', limit.toString());
+export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse> {
+  try {
+    console.log('Fetching user orders from server...');
+    // Changed from /api/user/orders to /api/order (user's orders)
+    const response = await axiosInstance.get(API_ENDPOINTS.ORDER.BASE, {
+      params: {
+        page,
+        limit,
+      },
+    });
 
-  const queryString = params.toString();
-  const url = `${API_BASE_URL}/user/orders${queryString ? `?${queryString}` : ''}`;
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+    if (response.data.success) {
+      console.log(`Retrieved ${response.data.data?.length || 0} user orders`);
+      return {
+        success: true,
+        data: {
+          orders: response.data.data || [],
+        },
+      };
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch orders');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      data: {
+        orders: [],
+      },
+      message: error.response?.data?.message || 'Failed to fetch orders',
+    };
+  }
 }
 
 export async function forgotPassword(data: ForgotPasswordData): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/user/forgot-password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.FORGOT_PASSWORD, data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to send reset email',
+    };
+  }
 }
 
 export async function resetPassword(data: ResetPasswordData): Promise<ApiResponse> {
-  const response = await fetch(`${API_BASE_URL}/user/reset-password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+  try {
+    const response = await axiosInstance.post(API_ENDPOINTS.USER.RESET_PASSWORD, data);
+    return response.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to reset password',
+    };
+  }
 }

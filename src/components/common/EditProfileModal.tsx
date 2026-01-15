@@ -26,7 +26,6 @@ export default function EditProfileModal({
     name: '',
     phone: '',
     email: '',
-    address: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,19 +153,6 @@ export default function EditProfileModal({
                 placeholder="Enter your email address"
                 required
                 disabled
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address
-              </label>
-              <input
-                type="text"
-                value={formData.address || ''}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3d5a4c] focus:border-transparent outline-none transition-all"
-                placeholder="Enter your address"
               />
             </div>
           </div>

@@ -1,87 +1,145 @@
-import { getAccessToken } from './auth';
+import axiosInstance from './axiosInstance';
+import { API_ENDPOINTS } from '../config/api.config';
 
-const API_BASE_URL = 'https://backend_test_api.nport.link/api';
+// Interfaces based on database structure
+export interface CartProduct {
+  id: number;
+  name: string;
+  price: string;
+  description: string;
+  discount: number;
+  category: string[];
+  thumbnail: string | null;
+}
 
-export interface CartItemAPI {
-  productVariantID: number;
-  productName: string;
-  size: string;
-  color: string;
+export interface CartItemColor {
+  id: number;
+  name: string;
+  hex: string;
+}
+
+// ProductVariant 
+export interface CartProductVariant {
+  id: number;
+  size: number;
   quantity: number;
-  price: number;
-  thumbnail: string;
+  product: CartProduct;
+  color: CartItemColor;
 }
 
-export interface CartData {
-  items: CartItemAPI[];
-  total: number;
-}
-
-export interface CartResponse {
-  success: boolean;
-  data?: CartData;
-  message?: string;
+// API response format for cart item 
+export interface ApiCartItem {
+  id: number;              // cartProduct id
+  quantity: number;
+  productVariant: CartProductVariant;
 }
 
 export interface AddToCartData {
-  productVariantID: number;
-  quantity: number;
+  productVariantID: number;       // API now requires productVariantID
+  quantity?: number;              // Quantity to set (for update) or add
 }
 
-export interface UpdateCartData {
-  quantity: number;
+export interface GetCartResponse {
+  success: boolean;
+  message?: string;
+  cartID?: number;
 }
 
-// Helper to add auth header
-function getHeaders(): HeadersInit {
-  const token = getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+export interface GetAllProductsResponse {
+  success: boolean;
+  message?: string;
+  data?: ApiCartItem[];
 }
 
-export async function getCart(): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart`, {
-    method: 'GET',
-    headers: getHeaders(),
-  });
-
-  const result = await response.json();
-  return result;
+export interface CartActionResponse {
+  success: boolean;
+  message?: string;
 }
 
-export async function addToCart(data: AddToCartData): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+export async function getCart(): Promise<GetCartResponse> {
+  try {
+    console.log('Fetching cart information from API...');
+    const response = await axiosInstance.get(API_ENDPOINTS.CART.BASE);
+    
+    if (response.data.success) {
+      console.log('Cart information retrieved successfully');
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch cart');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch cart',
+    };
+  }
 }
 
-export async function updateCartItem(
-  productVariantID: number,
-  data: UpdateCartData
-): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items/${productVariantID}`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
-  return result;
+export async function getAllCartProducts(): Promise<GetAllProductsResponse> {
+  try {
+    console.log('Fetching all cart items from API...');
+    const response = await axiosInstance.get(API_ENDPOINTS.CART.ALL_PRODUCTS);
+    
+    if (response.data.success) {
+      console.log(`Retrieved ${response.data.data?.length || 0} cart items`);
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error('❌ Failed to fetch cart products');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch cart products',
+    };
+  }
 }
 
-export async function removeFromCart(productVariantID: number): Promise<CartResponse> {
-  const response = await fetch(`${API_BASE_URL}/cart/items/${productVariantID}`, {
-    method: 'DELETE',
-    headers: getHeaders(),
-  });
+export async function addToCart(data: AddToCartData): Promise<CartActionResponse> {
+  try {
+    console.log('Adding product to shopping cart...');
+    const response = await axiosInstance.post(API_ENDPOINTS.CART.ADD_PRODUCT, data);
+    
+    if (response.data.success) {
+      console.log('Product successfully added to cart');
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error('❌ Failed to add to cart');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to add to cart',
+    };
+  }
+}
 
-  const result = await response.json();
-  return result;
+export async function removeFromCart(cartItemId: number): Promise<CartActionResponse> {
+  try {
+    console.log(`Removing cart item ${cartItemId} from shopping cart...`);
+    const response = await axiosInstance.delete(API_ENDPOINTS.CART.REMOVE_PRODUCT(cartItemId));
+    
+    if (response.data.success) {
+      console.log('Product successfully removed from cart');
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error('❌ Failed to remove from cart');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to remove from cart',
+    };
+  }
 }

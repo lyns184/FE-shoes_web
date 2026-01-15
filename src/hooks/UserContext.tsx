@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
-import type { CartItem } from './useCart';
+import type { CartItem } from '../types/cart';
 import { getUserProfile, updateUserProfile, getUserOrders } from '../services/user';
 import checkLogin from '../utlis/checkLogin';
 
@@ -37,12 +37,14 @@ interface UserContextType {
   profile: UserProfile | null;
   orders: Order[];
   isLoading: boolean;
+  error: string | null;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => void;
   updateProfile: (newProfile: Partial<UserProfile>) => Promise<boolean>;
   setDefaultShippingAddress: (address: { address: string; postalCode: string }) => void;
   removeDefaultShippingAddress: () => void;
   refreshProfile: () => Promise<void>;
   refreshOrders: () => Promise<void>;
+  clearAll: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -51,6 +53,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch profile on mount if logged in
   const refreshProfile = async () => {
@@ -59,19 +62,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setOrders([]);
       setIsLoading(false);
+      setError('Not authenticated');
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+    
     try {
       const result = await getUserProfile();
       if (result.success && result.data) {
         setProfile(result.data);
+        setError(null);
       } else {
-        setProfile(null);
+        setError(result.message || 'Failed to load profile');
+        console.warn('Profile fetch unsuccessful:', result.message);
       }
     } catch (err) {
-      console.error('Failed to fetch profile:', err);
-      setProfile(null);
+      const errorMsg = 'Failed to fetch profile';
+      setError(errorMsg);
+      console.error(errorMsg, err);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +98,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (result.success && result.data.orders) {
         setOrders(result.data.orders);
       } else {
-        setOrders([]);
+        console.warn('Orders fetch unsuccessful:', result.message);
       }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
@@ -119,15 +129,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (newProfile: Partial<UserProfile>): Promise<boolean> => {
+    setError(null);
+    
     try {
       const result = await updateUserProfile(newProfile);
       if (result.success && result.data) {
         setProfile(result.data);
         return true;
+      } else {
+        setError(result.message || 'Failed to update profile');
+        return false;
       }
-      return false;
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      const errorMsg = 'Failed to update profile';
+      setError(errorMsg);
+      console.error(errorMsg, err);
       return false;
     }
   };
@@ -150,17 +166,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearAll = () => {
+    console.log('🗑️ Clearing user context...');
+    setProfile(null);
+    setOrders([]);
+    setError(null);
+    setIsLoading(false);
+  };
+
   return (
     <UserContext.Provider value={{ 
       profile, 
       orders,
       isLoading,
+      error,
       addOrder, 
       updateProfile,
       setDefaultShippingAddress,
       removeDefaultShippingAddress,
       refreshProfile,
-      refreshOrders
+      refreshOrders,
+      clearAll
     }}>
       {children}
     </UserContext.Provider>
