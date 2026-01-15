@@ -108,8 +108,25 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<Update
     const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_PROFILE, data);
 
     if (response.data.success && response.data.data) {
-      // Update cached profile
-      localStorage.setItem('userProfile', JSON.stringify(response.data.data));
+      const updatedProfile = response.data.data;
+      
+      // Get current cached profile to preserve avatar and other fields
+      const currentProfile = localStorage.getItem('userProfile');
+      let profileToCache = updatedProfile;
+      
+      if (currentProfile) {
+        try {
+          const parsed = JSON.parse(currentProfile);
+          // Merge with existing data to preserve avatar and other fields
+          profileToCache = { ...parsed, ...updatedProfile };
+        } catch (parseError) {
+          // If parsing fails, just use the updated profile
+          profileToCache = updatedProfile;
+        }
+      }
+      
+      // Update cached profile with merged data
+      localStorage.setItem('userProfile', JSON.stringify(profileToCache));
       return response.data;
     }
     
@@ -143,6 +160,24 @@ export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarRe
     });
 
     if (response.data.success) {
+      // Update avatar in cached profile
+      const currentProfile = localStorage.getItem('userProfile');
+      if (currentProfile) {
+        try {
+          const profileData = JSON.parse(currentProfile);
+          // Update avatar URL with cache busting
+          const avatarUrl = response.data.data?.url || response.data.data?.avatar;
+          if (avatarUrl) {
+            profileData.avatar = avatarUrl.includes('?') 
+              ? `${avatarUrl}&t=${Date.now()}` 
+              : `${avatarUrl}?t=${Date.now()}`;
+            localStorage.setItem('userProfile', JSON.stringify(profileData));
+          }
+        } catch (parseError) {
+          // If caching fails, still return success response
+          console.error('Failed to cache avatar update:', parseError);
+        }
+      }
       return response.data;
     }
     

@@ -13,7 +13,6 @@ const cookies = new Cookies();
 export const TOKEN_KEYS = {
   ACCESS_TOKEN: 'accessToken',
   REFRESH_TOKEN: 'refreshToken',
-  USER_EMAIL: 'userEmail',
 } as const;
 
 // Cookie options
@@ -110,7 +109,6 @@ export function removeRefreshToken(): void {
 export function clearTokens(): void {
   removeAccessToken();
   removeRefreshToken();
-  localStorage.removeItem(TOKEN_KEYS.USER_EMAIL);
 }
 
 /**
