@@ -27,6 +27,11 @@ type WeeklySaleChartProps = {
 };
 
 const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
+  // Calculate max value and appropriate scale
+  const maxAmount = Math.max(...data.map(item => item.amount), 0);
+  const maxScaleValue = Math.ceil((maxAmount * 1.2) / 1000); // Add 20% padding, convert to thousands
+  const stepSize = Math.ceil(maxScaleValue / 5); // Create ~5 ticks
+  
   const chartData = {
     labels: data.map(item => item.day),
     datasets: [
@@ -75,9 +80,9 @@ const WeeklySaleChart = ({ data }: WeeklySaleChartProps) => {
     scales: {
       y: {
         beginAtZero: true,
-        max: 15000,
+        max: maxScaleValue > 0 ? maxScaleValue : 15000,
         ticks: {
-          stepSize: 3000,
+          stepSize: stepSize > 0 ? stepSize : 3000,
           callback: function (value: any) {
             return `${(value * 1000).toLocaleString()}₫`;
           },

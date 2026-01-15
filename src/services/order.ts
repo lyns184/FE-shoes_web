@@ -233,3 +233,41 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardResponse> 
     };
   }
 }
+
+// Weekly revenue
+export interface WeeklyRevenueData {
+  day: string;
+  amount: number;
+}
+
+export interface WeeklyRevenueResponse {
+  success: boolean;
+  data: WeeklyRevenueData[];
+  message?: string;
+  httpStatus?: number;
+}
+
+export async function getWeeklyRevenue(): Promise<WeeklyRevenueResponse> {
+  try {
+    const response = await axios.get<WeeklyRevenueResponse>(
+      `${API_BASE_URL}/admin/dashboard/weekly-revenue`,
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to fetch weekly revenue',
+        data: [],
+      };
+    }
+    return {
+      success: false,
+      message: 'An unexpected error occurred',
+      data: [],
+    };
+  }
+}
