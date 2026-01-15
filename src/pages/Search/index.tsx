@@ -4,7 +4,9 @@ import { FiChevronLeft } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import { ProductGridSkeleton } from '../../components/common/Skeleton';
+import Skeleton from '../../components/common/Skeleton';
 import { SearchFilters, type FilterState } from '../../components/common/SearchFilters';
+import { useSearchProducts, useProducts } from '../../hooks';
 import { products } from '../../data/products';
 
 export default function Search() {
@@ -21,41 +23,74 @@ export default function Search() {
     sizes: []
   });
 
+  // Use TanStack Query for search
+  const { 
+    data: searchResults, 
+    isLoading: isSearchLoading,
+    error: searchError 
+  } = useSearchProducts(displayQuery, displayQuery.length >= 2);
+
+  // Fallback: Use general products query if no search query
+  const { 
+    data: allProductsData, 
+    isLoading: isProductsLoading 
+  } = useProducts({}, !displayQuery || displayQuery.length < 2);
+
+  // Determine which data to use
+  const apiResults = displayQuery.length >= 2 ? searchResults : allProductsData;
+  const isLoading = displayQuery.length >= 2 ? isSearchLoading : isProductsLoading;
+
   // Calculate results with filters applied
   const results = useMemo(() => {
-    let filteredProducts = products;
+    let filteredProducts;
 
-    // Apply search query filter
-    if (displayQuery) {
-      filteredProducts = filteredProducts.filter(product => 
-        product.name.toLowerCase().includes(displayQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(displayQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(displayQuery.toLowerCase())
-      );
+    // Use API results if available, otherwise use local data
+    if (apiResults?.success && apiResults.data) {
+      filteredProducts = apiResults.data;
+    } else {
+      // Fallback to local data with search filter
+      filteredProducts = products;
+      if (displayQuery) {
+        filteredProducts = filteredProducts.filter(product => 
+          product.name.toLowerCase().includes(displayQuery.toLowerCase()) ||
+          product.brand.toLowerCase().includes(displayQuery.toLowerCase()) ||
+          product.category.toLowerCase().includes(displayQuery.toLowerCase())
+        );
+      }
     }
 
+    // Apply additional filters to both API and local data
     // Apply category filter
     if (filters.categories.length > 0) {
-      filteredProducts = filteredProducts.filter(product =>
-        filters.categories.some(cat => 
-          product.category.toLowerCase().includes(cat.toLowerCase())
-        )
-      );
+      filteredProducts = filteredProducts.filter(product => {
+        const productCategories = Array.isArray(product.category) 
+          ? product.category 
+          : [product.category];
+        return filters.categories.some(cat => 
+          productCategories.some(pc => 
+            pc.toLowerCase().includes(cat.toLowerCase())
+          )
+        );
+      });
     }
 
     // Apply brand filter
     if (filters.brands.length > 0) {
-      filteredProducts = filteredProducts.filter(product =>
-        filters.brands.includes(product.brand)
-      );
+      filteredProducts = filteredProducts.filter(product => {
+        const brandName = product.brand?.name || product.brand;
+        return filters.brands.includes(brandName);
+      });
     }
 
     // Apply price filter
-    filteredProducts = filteredProducts.filter(product =>
-      product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
-    );
+    if (filteredProducts) {
+      filteredProducts = filteredProducts.filter(product => {
+        const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+        return price >= filters.priceRange[0] && price <= filters.priceRange[1];
+      });
+    }
 
-    return filteredProducts;
+    return filteredProducts || [];
   }, [displayQuery, filters]);
 
   useEffect(() => {
@@ -100,13 +135,22 @@ export default function Search() {
           
           {/* Results Content - full width on mobile, 2/3 on desktop */}
           <div className="w-full lg:w-2/3">
-            {isPending ? (
-              <ProductGridSkeleton />
+            {(isLoading || isPending) ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <Skeleton key={index} className="h-80 rounded-lg" />
+                ))}
+              </div>
             ) : results.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg mb-4">
                   {query ? 'No products found for your search.' : 'Enter a search term to find products.'}
                 </p>
+                {searchError && (
+                  <p className="text-red-500 text-sm mb-4">
+                    Search failed: {searchError.message}
+                  </p>
+                )}
                 <button
                   onClick={() => navigate('/')}
                   className="bg-[#396254] hover:bg-[#2d4d3f] text-white px-6 py-2 rounded-md cursor-pointer"
@@ -136,16 +180,36 @@ export default function Search() {
                         default: return category;
                       }
                     };
+
+                    // Handle both API and local data formats
+                    const productData = product.brand?.name 
+                      ? {
+                          id: product.id,
+                          name: product.name,
+                          description: `${product.brand.name} - ${Array.isArray(product.category) ? product.category.join(', ') : product.category}`,
+                          price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                          thumbnail: Array.isArray(product.thumbnail) ? product.thumbnail[0]?.url || product.thumbnail[0] : product.thumbnail,
+                          category: Array.isArray(product.category) ? getCategoryDisplay(product.category[0]) : getCategoryDisplay(product.category),
+                        }
+                      : {
+                          id: product.id,
+                          name: product.name,
+                          description: `${product.brand} - ${product.category}`,
+                          price: product.price,
+                          thumbnail: product.image,
+                          category: getCategoryDisplay(product.category),
+                        };
+
                     return (
                       <ProductCard
                         key={product.id}
-                        id={product.id}
-                        name={product.name}
-                        description={`${product.brand} - ${product.category}`}
-                        price={product.price}
-                        thumbnail={product.image}
-                        category={getCategoryDisplay(product.category)}
-                        freeship={product.category === 'freeship'}
+                        id={productData.id}
+                        name={productData.name}
+                        description={productData.description}
+                        price={productData.price}
+                        thumbnail={productData.thumbnail}
+                        category={productData.category}
+                        freeship={productData.category === 'Free Ship'}
                       />
                     );
                   })}

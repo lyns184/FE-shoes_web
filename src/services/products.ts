@@ -152,6 +152,28 @@ export async function searchProducts(query: string): Promise<SearchProductsRespo
   }
 }
 
+export async function getProductDetail(productId: number): Promise<GetProductDetailResponse> {
+  try {
+    console.log(`Fetching product detail for ID ${productId}...`);
+    const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.DETAIL(productId));
+    
+    if (response.data.success) {
+      console.log(`✅ Fetched product detail`);
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format');
+  } catch (error: any) {
+    console.error(`❌ Failed to fetch product detail for ID ${productId}`);
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Product not found',
+    };
+  }
+}
+
 export async function getProductsByBrand(brandID: number): Promise<GetProductsResponse> {
   try {
     console.log(`Fetching products for brand ${brandID}...`);

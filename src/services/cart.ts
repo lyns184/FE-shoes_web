@@ -1,7 +1,7 @@
 import axiosInstance from './axiosInstance';
 import { API_ENDPOINTS } from '../config/api.config';
 
-// Interfaces based on API docs
+// Interfaces based on database structure
 export interface CartProduct {
   id: number;
   name: string;
@@ -9,17 +9,34 @@ export interface CartProduct {
   description: string;
   discount: number;
   category: string[];
-  thumbnail: string;
+  thumbnail: string | null;
 }
 
-export interface CartItem {
+export interface CartItemColor {
   id: number;
+  name: string;
+  hex: string;
+}
+
+// ProductVariant 
+export interface CartProductVariant {
+  id: number;
+  size: number;
   quantity: number;
   product: CartProduct;
+  color: CartItemColor;
+}
+
+// API response format for cart item 
+export interface ApiCartItem {
+  id: number;              // cartProduct id
+  quantity: number;
+  productVariant: CartProductVariant;
 }
 
 export interface AddToCartData {
-  productID: number;
+  productVariantID: number;       // API now requires productVariantID
+  quantity?: number;              // Quantity to set (for update) or add
 }
 
 export interface GetCartResponse {
@@ -31,7 +48,7 @@ export interface GetCartResponse {
 export interface GetAllProductsResponse {
   success: boolean;
   message?: string;
-  data?: CartItem[];
+  data?: ApiCartItem[];
 }
 
 export interface CartActionResponse {
@@ -105,10 +122,10 @@ export async function addToCart(data: AddToCartData): Promise<CartActionResponse
   }
 }
 
-export async function removeFromCart(productID: number): Promise<CartActionResponse> {
+export async function removeFromCart(cartItemId: number): Promise<CartActionResponse> {
   try {
-    console.log(`Removing product ${productID} from shopping cart...`);
-    const response = await axiosInstance.delete(API_ENDPOINTS.CART.REMOVE_PRODUCT(productID));
+    console.log(`Removing cart item ${cartItemId} from shopping cart...`);
+    const response = await axiosInstance.delete(API_ENDPOINTS.CART.REMOVE_PRODUCT(cartItemId));
     
     if (response.data.success) {
       console.log('Product successfully removed from cart');

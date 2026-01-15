@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
-import type { CartItem } from './useCart';
+import type { CartItem } from '../types/cart';
 import { getUserProfile, updateUserProfile, getUserOrders } from '../services/user';
 import { checkAuth } from '../services/auth';
 

@@ -1,8 +1,11 @@
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
-import { CartProvider } from './hooks/useCart'
 import { UserProvider } from './hooks/UserContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from './lib/queryClient'
+import { BuyNowProvider } from './hooks/useBuyNow'
 import 'nprogress/nprogress.css'
 import './App.css'
 
@@ -12,13 +15,16 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1057892063257
 function App() {
   try {
     return (
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <UserProvider>
-          <CartProvider>
-            <RouterProvider router={router} />
-          </CartProvider>
-        </UserProvider>
-      </GoogleOAuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <UserProvider>
+            <BuyNowProvider>
+              <RouterProvider router={router} />
+            </BuyNowProvider>
+          </UserProvider>
+        </GoogleOAuthProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     )
   } catch (error) {
     console.error('App Error:', error);

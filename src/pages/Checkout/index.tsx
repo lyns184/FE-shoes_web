@@ -5,7 +5,7 @@ import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
 import OrderConfirmedModal from '../../components/common/OrderConfirmedModal';
-import { useCart } from '../../hooks/useCart';
+import { useCart, usePlaceOrder } from '../../hooks';
 import { useUser } from '../../hooks/UserContext';
 import { getRelatedProducts } from '../../data/products';
 
@@ -28,7 +28,8 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { items, removeFromCart, updateQuantity, subtotal, buyNowItem, setBuyNowItem, clearCart } = useCart();
-  const { addOrder, profile } = useUser();
+  const { profile } = useUser();
+  const placeOrderMutation = usePlaceOrder();
   const recommendedProducts = getRelatedProducts(0, 4);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [addressMode, setAddressMode] = useState<'default' | 'new'>('new'); // Always start with 'new'
@@ -81,7 +82,7 @@ export default function Checkout() {
     }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     // Validate required delivery information fields based on address selection mode
     if (addressMode === 'default' && !profile?.defaultShippingAddress) {
       alert('Please set a default address in your profile or choose to enter new information');
@@ -95,23 +96,28 @@ export default function Checkout() {
       }
     }
 
-    // Create new order with delivery and payment information
-    addOrder({
-      items: checkoutItems,
-      deliveryInfo,
-      paymentMethod,
-      total
-    });
+    try {
+      // Call API to place order
+      await placeOrderMutation.mutateAsync({
+        items: checkoutItems,
+        deliveryInfo,
+        paymentMethod,
+        total
+      });
 
-    // Clear shopping cart only if not a buy-now item
-    if (!buyNowItem) {
-      clearCart();
-    } else {
-      setBuyNowItem(null);
+      // Clear shopping cart only if not a buy-now item
+      if (!buyNowItem) {
+        clearCart();
+      } else {
+        setBuyNowItem(null);
+      }
+
+      // Display order confirmation modal via URL parameter
+      setSearchParams({ orderConfirmed: 'true' });
+    } catch (error: any) {
+      console.error('Failed to place order:', error);
+      alert(error.message || 'Failed to place order. Please try again.');
     }
-
-    // Display order confirmation modal via URL parameter
-    setSearchParams({ orderConfirmed: 'true' });
   };
 
   const handleContinueShopping = () => {
@@ -248,7 +254,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1) });
                         } else {
-                          updateQuantity(item.id, item.size, item.color, -1);
+                          updateQuantity(item.id, item.productID || 0, -1);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
@@ -261,7 +267,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: buyNowItem.quantity + 1 });
                         } else {
-                          updateQuantity(item.id, item.size, item.color, 1);
+                          updateQuantity(item.id, item.productID || 0, 1);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
@@ -283,7 +289,7 @@ export default function Checkout() {
                           setBuyNowItem(null);
                           navigate('/');
                         } else {
-                          removeFromCart(item.id, item.size, item.color);
+                          removeFromCart(item.id);
                         }
                       }}
                       className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"

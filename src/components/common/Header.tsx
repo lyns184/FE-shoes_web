@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingCart, FiUser, FiX } from 'react-icons/fi';
 import logoImg from '../../assets/logo.png';
-import { useCart } from '../../hooks/useCart';
+import { useCart, useSearchProducts } from '../../hooks';
 import { products } from '../../data/products';
 
 export default function ShopHeader() {
@@ -13,8 +13,15 @@ export default function ShopHeader() {
   const navigate = useNavigate();
   const { totalItems } = useCart();
 
-  // Filter products based on search value
-  const searchResults = useMemo(() => {
+  // Use TanStack Query for search with debouncing
+  const { 
+    data: searchResults, 
+    isLoading: isSearchLoading,
+    error: searchError 
+  } = useSearchProducts(searchValue, searchValue.length >= 2);
+
+  // Filter products based on search value - fallback to local data
+  const localSearchResults = useMemo(() => {
     if (!searchValue.trim()) return [];
     return products.filter(product =>
       product.name.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -22,6 +29,11 @@ export default function ShopHeader() {
       product.category.toLowerCase().includes(searchValue.toLowerCase())
     ).slice(0, 5); // Limit to 5 results
   }, [searchValue]);
+
+  // Use API results if available, otherwise use local results
+  const displayResults = searchResults?.success && searchResults.data 
+    ? searchResults.data.slice(0, 5)
+    : localSearchResults;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,28 +108,57 @@ export default function ShopHeader() {
             </form>
 
             {/* Search Dropdown */}
-            {showDropdown && searchResults.length > 0 && (
+            {showDropdown && displayResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-md shadow-lg mt-1 max-h-60 overflow-y-auto z-50">
-                {searchResults.map((product) => (
-                  <div
-                    key={product.id}
-                    onClick={() => handleProductClick(product.id)}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                  >
-                    <img 
-                      src={product.image} 
-                      alt={product.name} 
-                      className="w-10 h-10 object-cover rounded"
-                    />
-                    <div>
-                      <p className="font-medium text-sm">{product.name}</p>
-                      <p className="text-xs text-gray-500">{product.brand}</p>
-                    </div>
-                    <div className="ml-auto">
-                      <p className="font-semibold text-sm">${product.price}</p>
-                    </div>
+                {isSearchLoading && searchValue.length >= 2 && (
+                  <div className="p-3 text-center text-gray-500 text-sm">
+                    Searching...
                   </div>
-                ))}
+                )}
+                {displayResults.map((product) => {
+                  // Handle both API and local data formats
+                  const productData = product.brand?.name 
+                    ? {
+                        id: product.id,
+                        name: product.name,
+                        brand: product.brand.name,
+                        thumbnail: Array.isArray(product.thumbnail) ? product.thumbnail[0]?.url || product.thumbnail[0] : product.thumbnail,
+                        price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                      }
+                    : {
+                        id: product.id,
+                        name: product.name,
+                        brand: product.brand,
+                        thumbnail: product.image,
+                        price: product.price,
+                      };
+                      
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductClick(productData.id)}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                    >
+                      <img 
+                        src={productData.thumbnail} 
+                        alt={productData.name} 
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{productData.name}</p>
+                        <p className="text-xs text-gray-500">{productData.brand}</p>
+                      </div>
+                      <div className="ml-auto">
+                        <p className="font-semibold text-sm">${productData.price}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {searchError && (
+                  <div className="p-3 text-center text-red-500 text-sm">
+                    Search failed. Showing local results.
+                  </div>
+                )}
               </div>
             )}
           </div>

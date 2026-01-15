@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Cart API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button.secondary {
+      background: #2196F3;
+    }
+    button.danger {
+      background: #f44336;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    input {
+      padding: 8px;
+      margin-right: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 200px;
+    }
+    .success {
+      color: #4CAF50;
+    }
+    .error {
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛒 Debug Cart API</h1>
+  
+  <div class="section">
+    <h2>1. Kiểm tra Authentication</h2>
+    <button onclick="checkAuth()">Check Auth Status</button>
+    <pre id="auth-result">Chưa kiểm tra...</pre>
+  </div>
+
+  <div class="section">
+    <h2>2. Thêm sản phẩm vào giỏ hàng</h2>
+    <input type="number" id="variantId" placeholder="Product Variant ID" value="1">
+    <button onclick="addToCart()">Add to Cart</button>
+    <pre id="add-result">Chưa thực hiện...</pre>
+  </div>
+
+  <div class="section">
+    <h2>3. Xem giỏ hàng hiện tại</h2>
+    <button class="secondary" onclick="getCart()">Get Cart Items</button>
+    <pre id="cart-result">Chưa tải...</pre>
+  </div>
+
+  <div class="section">
+    <h2>4. Xóa sản phẩm khỏi giỏ</h2>
+    <input type="number" id="removeVariantId" placeholder="Product Variant ID">
+    <button class="danger" onclick="removeFromCart()">Remove from Cart</button>
+    <pre id="remove-result">Chưa thực hiện...</pre>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    
+    function getToken() {
+      return localStorage.getItem('accessToken');
+    }
+
+    async function checkAuth() {
+      const token = getToken();
+      const resultEl = document.getElementById('auth-result');
+      
+      if (!token) {
+        resultEl.innerHTML = '<span class="error">❌ Không có token. Bạn cần đăng nhập trước!</span>';
+        return;
+      }
+      
+      resultEl.innerHTML = `<span class="success">✅ Có token:\n${token.substring(0, 50)}...</span>`;
+    }
+
+    async function addToCart() {
+      const variantId = document.getElementById('variantId').value;
+      const resultEl = document.getElementById('add-result');
+      const token = getToken();
+      
+      if (!token) {
+        resultEl.innerHTML = '<span class="error">❌ Cần đăng nhập trước!</span>';
+        return;
+      }
+      
+      resultEl.innerHTML = '⏳ Đang thêm vào giỏ hàng...';
+      
+      try {
+        const response = await fetch(`${API_BASE}/cart/add-product`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ productVariantID: parseInt(variantId) })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          resultEl.innerHTML = `<span class="success">✅ SUCCESS:</span>\n${JSON.stringify(data, null, 2)}`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ FAILED:</span>\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">❌ ERROR:\n${error.message}</span>`;
+      }
+    }
+
+    async function getCart() {
+      const resultEl = document.getElementById('cart-result');
+      const token = getToken();
+      
+      if (!token) {
+        resultEl.innerHTML = '<span class="error">❌ Cần đăng nhập trước!</span>';
+        return;
+      }
+      
+      resultEl.innerHTML = '⏳ Đang tải giỏ hàng...';
+      
+      try {
+        const response = await fetch(`${API_BASE}/cart/get-all-product`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const itemCount = data.data?.length || 0;
+          resultEl.innerHTML = `<span class="success">✅ Có ${itemCount} sản phẩm trong giỏ:</span>\n${JSON.stringify(data, null, 2)}`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ FAILED:</span>\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">❌ ERROR:\n${error.message}</span>`;
+      }
+    }
+
+    async function removeFromCart() {
+      const variantId = document.getElementById('removeVariantId').value;
+      const resultEl = document.getElementById('remove-result');
+      const token = getToken();
+      
+      if (!token) {
+        resultEl.innerHTML = '<span class="error">❌ Cần đăng nhập trước!</span>';
+        return;
+      }
+      
+      if (!variantId) {
+        resultEl.innerHTML = '<span class="error">❌ Nhập Product Variant ID!</span>';
+        return;
+      }
+      
+      resultEl.innerHTML = '⏳ Đang xóa khỏi giỏ hàng...';
+      
+      try {
+        const response = await fetch(`${API_BASE}/cart/remove-product/${variantId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          resultEl.innerHTML = `<span class="success">✅ SUCCESS:</span>\n${JSON.stringify(data, null, 2)}`;
+        } else {
+          resultEl.innerHTML = `<span class="error">❌ FAILED:</span>\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">❌ ERROR:\n${error.message}</span>`;
+      }
+    }
+
+    // Auto check auth on load
+    window.onload = checkAuth;
+  </script>
+</body>
+</html>

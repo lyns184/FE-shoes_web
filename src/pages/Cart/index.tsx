@@ -3,7 +3,7 @@ import { FiChevronLeft, FiMinus, FiPlus, FiX } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import InfoCard from '../../components/card/InfoCard';
-import { useCart } from '../../hooks/useCart';
+import { useCart } from '../../hooks';
 import { getRelatedProducts } from '../../data/products';
 
 const infoCards = [
@@ -60,8 +60,8 @@ export default function Cart() {
               {/* Desktop Table Header */}
               <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 text-sm font-semibold">
                 <div className="col-span-4">Product</div>
-                <div className="col-span-1.5 text-center">Size</div>
-                <div className="col-span-1.5 text-center">Color</div>
+                <div className="col-span-1 text-center">Size</div>
+                <div className="col-span-2 text-center">Color</div>
                 <div className="col-span-2 text-center">Quantity</div>
                 <div className="col-span-2 text-right">Price</div>
                 <div className="col-span-1"></div>
@@ -90,7 +90,7 @@ export default function Cart() {
                         </div>
                       </div>
                       <button
-                        onClick={() => removeFromCart(item.id, item.size, item.color)}
+                        onClick={() => removeFromCart(item.id)}
                         className="p-1 hover:bg-gray-100 rounded transition-colors"
                       >
                         <FiX className="w-4 h-4 text-gray-400" />
@@ -99,14 +99,14 @@ export default function Cart() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.id, item.size, item.color, -1)}
+                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1)}
                           className="p-1 border border-gray-300 rounded hover:bg-gray-50"
                         >
                           <FiMinus className="w-3 h-3" />
                         </button>
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.size, item.color, 1)}
+                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1)}
                           className="p-1 border border-gray-300 rounded hover:bg-gray-50"
                         >
                           <FiPlus className="w-3 h-3" />
@@ -133,42 +133,42 @@ export default function Cart() {
                     </div>
 
                     {/* Size */}
-                    <div className="col-span-1.5 text-center">
-                      <span className="text-sm">{item.size}</span>
+                    <div className="col-span-1 flex items-center justify-center">
+                      <span className="text-sm font-medium">{item.size}</span>
                     </div>
 
                     {/* Color */}
-                    <div className="col-span-1.5 text-center">
+                    <div className="col-span-2 flex items-center justify-center">
                       <span className="text-sm">{item.color}</span>
                     </div>
 
                     {/* Quantity Controls */}
-                    <div className="col-span-2 flex items-center justify-center gap-3">
+                    <div className="col-span-2 flex items-center justify-center gap-2">
                       <button
-                        onClick={() => updateQuantity(item.id, item.size, item.color, -1)}
-                        className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1)}
+                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer transition-colors"
                       >
                         <FiMinus className="h-3 w-3" />
                       </button>
-                      <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                      <span className="text-sm font-medium w-8 text-center bg-gray-50 py-1 px-2 rounded">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.size, item.color, 1)}
-                        className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1)}
+                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer transition-colors"
                       >
                         <FiPlus className="h-3 w-3" />
                       </button>
                     </div>
 
                     {/* Price */}
-                    <div className="col-span-2 text-right">
-                      <span className="text-sm font-semibold">{item.price}$</span>
+                    <div className="col-span-2 flex items-center justify-end">
+                      <span className="text-sm font-semibold text-[#396254]">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
 
                     {/* Remove Button */}
-                    <div className="col-span-1 flex justify-end">
+                    <div className="col-span-1 flex justify-center items-center">
                       <button
-                        onClick={() => removeFromCart(item.id, item.size, item.color)}
-                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer p-2"
                       >
                         <FiX className="h-5 w-5" />
                       </button>
