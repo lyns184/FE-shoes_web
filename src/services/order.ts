@@ -244,6 +244,23 @@ export async function updateOrderStatus(
   }
 }
 
+export interface CancelOrderResponse {
+  success: boolean;
+  message?: string;
+}
+
+export async function cancelOrder(orderId: number): Promise<CancelOrderResponse> {
+  try {
+    const response = await axiosInstance.delete(`/orders/${orderId}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to cancel order',
+    };
+  }
+}
+
 // Admin dashboard stats
 export interface AdminDashboardStats {
   totalOrders: number;

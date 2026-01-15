@@ -15,38 +15,18 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1057892063257
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <UserProvider>
-        <CartProvider>
-          <RouterProvider router={router} />
-          <Toaster position="top-center" />
-        </CartProvider>
-      </UserProvider>
-    </GoogleOAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <Toaster position="top-center" reverseOrder={false} />
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <UserProvider>
+          <BuyNowProvider>
+            <RouterProvider router={router} />
+          </BuyNowProvider>
+        </UserProvider>
+      </GoogleOAuthProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   )
-  try {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <Toaster position="top-center" reverseOrder={false} />
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-          <UserProvider>
-            <BuyNowProvider>
-              <RouterProvider router={router} />
-            </BuyNowProvider>
-          </UserProvider>
-        </GoogleOAuthProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    )
-  } catch (error) {
-    console.error('App Error:', error);
-    return (
-      <div style={{ padding: '20px', color: 'red' }}>
-        <h1>Error loading app</h1>
-        <pre>{String(error)}</pre>
-      </div>
-    );
-  }
 }
 
 export default App
