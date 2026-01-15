@@ -1,4 +1,5 @@
 import { RouterProvider } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { router } from './router'
 import { UserProvider } from './hooks/UserContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
@@ -16,6 +17,7 @@ function App() {
   try {
     return (
       <QueryClientProvider client={queryClient}>
+        <Toaster position="top-center" reverseOrder={false} />
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
           <UserProvider>
             <BuyNowProvider>

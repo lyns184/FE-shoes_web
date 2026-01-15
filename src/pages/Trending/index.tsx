@@ -4,7 +4,8 @@ import { FiChevronLeft } from 'react-icons/fi';
 import MainLayout from '../../layouts/MainLayout';
 import ProductCard from '../../components/card/ProductCard';
 import { SearchFilters, type FilterState } from '../../components/common/SearchFilters';
-import { products } from '../../data/products';
+import { useTrendingProducts } from '../../hooks';
+import Skeleton from '../../components/common/Skeleton';
 
 export default function Trending() {
   const navigate = useNavigate();
@@ -16,37 +17,49 @@ export default function Trending() {
     sizes: []
   });
 
-  // Filter products for trending category with applied filters
+  // Fetch trending products from API
+  const { data: apiTrendingProducts, isLoading } = useTrendingProducts(50); // Get more for filtering
+
+  // Filter products with applied filters
   const trendingProducts = useMemo(() => {
-    let filteredProducts = products.filter(product => 
-      product.category === 'trending' ||
-      product.category === 'best-seller' ||
-      product.price >= 150 // Higher priced items
-    );
+    if (!apiTrendingProducts?.success || !apiTrendingProducts.data) {
+      return [];
+    }
+
+    let filteredProducts = apiTrendingProducts.data;
 
     // Apply category filter
     if (filters.categories.length > 0) {
       filteredProducts = filteredProducts.filter(product =>
-        filters.categories.some(cat => 
-          product.category.toLowerCase().includes(cat.toLowerCase())
-        )
+        filters.categories.some(cat => {
+          const productCategories = Array.isArray(product.category) 
+            ? product.category 
+            : [product.category];
+          return productCategories.some(pCat => 
+            pCat?.toLowerCase().includes(cat.toLowerCase())
+          );
+        })
       );
     }
 
     // Apply brand filter
     if (filters.brands.length > 0) {
-      filteredProducts = filteredProducts.filter(product =>
-        filters.brands.includes(product.brand)
-      );
+      filteredProducts = filteredProducts.filter(product => {
+        const brandName = typeof product.brand === 'string' ? product.brand : product.brand?.name || '';
+        return filters.brands.includes(brandName);
+      });
     }
 
     // Apply price filter
-    filteredProducts = filteredProducts.filter(product =>
-      product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
-    );
+    const minPrice = filters.priceRange[0];
+    const maxPrice = filters.priceRange[1];
+    filteredProducts = filteredProducts.filter(product => {
+      const price = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+      return price >= minPrice && price <= maxPrice;
+    });
 
-    return filteredProducts.slice(0, 20); // Limit to 20 trending items
-  }, [filters]);
+    return filteredProducts;
+  }, [apiTrendingProducts, filters]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
@@ -79,7 +92,13 @@ export default function Trending() {
           
           {/* Results Content - full width on mobile, 2/3 on desktop */}
           <div className="w-full lg:w-2/3">
-            {trendingProducts.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {[...Array(12)].map((_, index) => (
+                  <Skeleton key={index} className="h-80 rounded-lg" />
+                ))}
+              </div>
+            ) : trendingProducts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 text-lg mb-4">No trending products found</p>
                 <button
@@ -101,26 +120,36 @@ export default function Trending() {
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   {trendingProducts.map((product) => {
-                    const getCategoryDisplay = (category: string) => {
-                      switch(category) {
+                    const getCategoryDisplay = (category: string | string[]) => {
+                      const cat = Array.isArray(category) ? category[0] : category;
+                      switch(cat) {
                         case 'trending': return 'Trending';
                         case 'best-seller': return 'Best Seller';
                         case 'freeship': return 'Free Ship';
                         case 'new': return 'New';
                         case 'popular': return 'Popular';
-                        default: return category;
+                        default: return cat || '';
                       }
                     };
+                    
+                    // Handle API data format
+                    const brandName = typeof product.brand === 'string' ? product.brand : product.brand?.name || 'Unknown';
+                    const thumbnailUrl = Array.isArray(product.thumbnail) 
+                      ? (typeof product.thumbnail[0] === 'string' ? product.thumbnail[0] : product.thumbnail[0]?.url || '')
+                      : (typeof product.thumbnail === 'string' ? product.thumbnail : '');
+                    const productPrice = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+                    const productCategory = Array.isArray(product.category) ? product.category[0] : product.category;
+                    
                     return (
-                      <ProductCard
-                        key={product.id}
+                      <ProductCard 
+                        key={product.id} 
                         id={product.id}
                         name={product.name}
-                        description={`${product.brand} - ${product.category}`}
-                        price={product.price}
-                        thumbnail={product.image}
-                        category={getCategoryDisplay(product.category)}
-                        freeship={product.category === 'freeship'}
+                        description={`${brandName} - ${Array.isArray(product.category) ? product.category.join(', ') : product.category}`}
+                        price={productPrice}
+                        thumbnail={thumbnailUrl}
+                        category={getCategoryDisplay(productCategory)}
+                        freeship={productCategory === 'freeship'}
                       />
                     );
                   })}

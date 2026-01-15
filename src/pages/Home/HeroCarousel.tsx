@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import bannerImg from '../../assets/banner.png';
+import blogDonJoyImg from '../../assets/blog-don-joy.jpg';
+import shopnowImg from '../../assets/shopnow.png';
 
 const slides = [
   {
@@ -12,16 +14,16 @@ const slides = [
   },
   {
     id: 2,
-    image: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_1920,h_600/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex",
-    title: "NEW ARRIVALS",
-    subtitle: "Fresh styles just landed",
+    image: blogDonJoyImg,
+    title: "FEATURED",
+    subtitle: "Exclusive collection",
     titleColor: "text-blue-600"
   },
   {
     id: 3,
-    image: "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_1920,h_600/global/302517/02/sv01/fnd/VNM/fmt/png/RS-X-Sneakers-Unisex",
-    title: "TRENDING",
-    subtitle: "Most popular sneakers this season",
+    image: shopnowImg,
+    title: "SHOP NOW",
+    subtitle: "Discover latest styles",
     titleColor: "text-emerald-600"
   }
 ];
@@ -55,17 +57,8 @@ export default function HeroCarousel() {
                 <img 
                   src={slide.image} 
                   alt={slide.title} 
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black/20"></div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <h1 className={`text-8xl font-bold tracking-wider mb-4 ${slide.titleColor} drop-shadow-lg`}>
-                    {slide.title}
-                  </h1>
-                  <p className="text-xl font-medium text-white drop-shadow-md">
-                    {slide.subtitle}
-                  </p>
-                </div>
               </div>
             ))}
           </div>

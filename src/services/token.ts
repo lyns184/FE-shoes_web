@@ -31,7 +31,6 @@ const COOKIE_OPTIONS = {
 export function getAccessToken(): string | null {
   const token = localStorage.getItem(TOKEN_KEYS.ACCESS_TOKEN);
   if (!token) {
-    console.warn('No access token found in local storage');
     return null;
   }
   
@@ -41,11 +40,6 @@ export function getAccessToken(): string | null {
     .replace(/^["']|["']$/g, '')
     .trim();
     
-  console.log('🔑 Retrieved token:', {
-    length: sanitized.length,
-    preview: sanitized.substring(0, 20) + '...',
-  });
-  
   return sanitized;
 }
 
@@ -62,7 +56,6 @@ export function getRefreshToken(): string | null {
  */
 export function setAccessToken(token: string): void {
   if (!token) {
-    console.warn('Cannot save empty token value to local storage');
     return;
   }
   
@@ -73,23 +66,11 @@ export function setAccessToken(token: string): void {
       .replace(/^["']|["']$/g, '')
       .trim();
     
-    console.log('💾 Saving access token:', {
-      original_length: token.length,
-      sanitized_length: sanitized.length,
-      preview: sanitized.substring(0, 20) + '...',
-    });
-    
     localStorage.setItem(TOKEN_KEYS.ACCESS_TOKEN, sanitized);
     
     // Verify it was saved
     const saved = localStorage.getItem(TOKEN_KEYS.ACCESS_TOKEN);
-    if (saved !== sanitized) {
-      console.error('❌ Token verification failed! Saved token does not match.');
-    } else {
-    console.log('Access token saved and verified in local storage');
-    }
   } catch (error) {
-    console.error('❌ Failed to save access token to localStorage:', error);
   }
 }
 
@@ -136,23 +117,13 @@ export function clearTokens(): void {
  * Save tokens (access token to localStorage, refresh token to cookies)
  */
 export function saveTokens(accessToken: string, refreshToken: string): void {
-  console.log('💾 saveTokens called:', {
-    hasAccessToken: !!accessToken,
-    hasRefreshToken: !!refreshToken,
-    accessTokenLength: accessToken?.length || 0,
-    refreshTokenLength: refreshToken?.length || 0,
-  });
-  
   if (!accessToken) {
-    console.error('❌ saveTokens: accessToken is missing!');
     return;
   }
   
   setAccessToken(accessToken);
   if (refreshToken) {
     setRefreshToken(refreshToken);
-  } else {
-    console.warn('No refresh token provided to token exchange function');
   }
 }
 
@@ -186,7 +157,6 @@ export async function refreshAccessToken(): Promise<string | null> {
 
     return null;
   } catch (error) {
-    console.error('Failed to refresh token:', error);
     return null;
   }
 }

@@ -6,7 +6,7 @@ import EditProfileModal from '../../components/common/EditProfileModal';
 import ShippingAddressModal from '../../components/common/ShippingAddressModal';
 import { useUser } from '../../hooks/UserContext';
 import { checkAuth, logout } from '../../services/auth';
-
+import checkLogin from '../../utlis/checkLogin';
 // Interface for flattened order items
 interface OrderItem {
   orderId: number;
@@ -23,7 +23,8 @@ interface OrderItem {
   quantity?: number;
 }
 
-export default function ProfilePage() {
+export default function ProfilePage() 
+{
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState<'profile' | 'history'>('profile');
@@ -32,13 +33,21 @@ export default function ProfilePage() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ORDERS_PER_PAGE = 10;
-  const { profile, orders, isLoading, error, updateProfile, updateAvatar, setDefaultShippingAddress, removeDefaultShippingAddress, clearAll } = useUser();
+  const { profile, orders, isLoading, error, updateProfile, updateAvatar, setDefaultShippingAddress, removeDefaultShippingAddress, clearAll, refreshProfile, refreshOrders } = useUser();
 
   useEffect(() => {
-    if (!checkAuth()) {
+    if (!checkLogin()) {
       navigate('/login');
     }
   }, [navigate]);
+
+  // Separate effect to refresh data when component mounts
+  useEffect(() => {
+    if (checkLogin()) {
+      refreshProfile();
+      refreshOrders();
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   // Handle tab from URL parameter and auto-open address modal if redirected from checkout
   useEffect(() => {
@@ -169,7 +178,7 @@ export default function ProfilePage() {
                     e.currentTarget.style.display = 'none';
                   }}
                   onLoad={() => {
-                    console.log('Avatar loaded successfully:', profile.avatar);
+                    // Avatar loaded successfully
                   }}
                 />
               ) : (
@@ -223,12 +232,9 @@ export default function ProfilePage() {
             </button>
 
             <button
-              onClick={() => {
-                console.log('User logging out...');
-                logout(); // Clear authentication tokens and local storage
+              onClick={async () => {
                 clearAll(); // Clear user context data
-                // Force full page reload to reset all contexts and states
-                window.location.href = '/login';
+                await logout(); // This will clear tokens and redirect to login
               }}
               className="w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors mt-2 text-gray-700 hover:bg-gray-50"
             >
@@ -270,7 +276,7 @@ export default function ProfilePage() {
                         e.currentTarget.style.display = 'none';
                       }}
                       onLoad={() => {
-                        console.log('Avatar loaded successfully:', profile.avatar);
+                        // Avatar loaded successfully
                       }}
                     />
                   ) : (

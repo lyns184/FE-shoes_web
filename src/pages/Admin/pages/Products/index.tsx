@@ -1,17 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import ProductForm, { type ProductFormData } from '../../../../components/Form/ProductForm';
+import { getAllProducts, type Product as ApiProduct } from '../../../../services/product';
+
+type Variant = {
+    color: { label: string; hex: string };
+    size: number;
+    quantity: number;
+};
 
 type Product = {
     id: number;
     image: string;
     name: string;
     brand: string;
-    category: string;
-    colors: { label: string; hex: string }[];
-    sizes: number[];
+    categories: string[];
+    variants: Variant[];
     price: number;
-    stock: number;
     status: 'Active' | 'Inactive';
 };
 
@@ -23,20 +29,56 @@ const AdminProducts = () => {
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-    const products = useMemo<Product[]>(() => ([
+    // Fetch products from API using TanStack Query
+    const { data: productsData, isLoading, isError, error } = useQuery({
+        queryKey: ['products'],
+        queryFn: getAllProducts,
+    });
+
+    // Transform API data to match component's Product type
+    const products = useMemo<Product[]>(() => {
+        if (!productsData?.success || !productsData.data) return [];
+        
+        return productsData.data.map((apiProduct: ApiProduct) => ({
+            id: apiProduct.id,
+            image: apiProduct.thumbnail?.[0]?.url || '',
+            name: apiProduct.name,
+            brand: apiProduct.brand.name,
+            categories: apiProduct.category,
+            variants: apiProduct.productVariants.map(v => ({
+                color: {
+                    label: v.color.name,
+                    hex: v.color.hex
+                },
+                size: v.size,
+                quantity: v.quantity
+            })),
+            price: parseFloat(apiProduct.price),
+            status: apiProduct.active ? 'Active' as const : 'Inactive' as const
+        }));
+    }, [productsData]);
+
+    useEffect(() => {
+        console.log('Products data loaded:', products);
+    }, [products]);
+
+    // Mock data for development (remove when API is ready)
+    const mockProducts = useMemo<Product[]>(() => ([
         {
             id: 1,
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Air Max 90',
             brand: 'Nike',
-            category: 'Trending',
-            colors: [
-                { label: 'White', hex: '#FFFFFF' },
-                { label: 'Red', hex: '#EF4444' }
+            categories: ['Trending', 'Best Seller'],
+            variants: [
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 38, quantity: 5 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 39, quantity: 8 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 12 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 38, quantity: 3 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 39, quantity: 7 },
+                { color: { label: 'Red', hex: '#EF4444' }, size: 40, quantity: 10 }
             ],
-            sizes: [38, 39, 40, 41, 42],
             price: 150,
-            stock: 42,
             status: 'Active'
         },
         {
@@ -44,14 +86,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Ultraboost Light',
             brand: 'Adidas',
-            category: 'Sale',
-            colors: [
-                { label: 'Black', hex: '#000000' },
-                { label: 'White', hex: '#FFFFFF' }
+            categories: ['Best Seller', 'Freeship'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 10 },
+                { color: { label: 'Black', hex: '#000000' }, size: 40, quantity: 15 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 39, quantity: 8 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 12 }
             ],
-            sizes: [39, 40, 41, 42, 43, 44],
             price: 180,
-            stock: 28,
             status: 'Inactive'
         },
         {
@@ -59,14 +101,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: '550',
             brand: 'New Balance',
-            category: 'Popular',
-            colors: [
-                { label: 'White', hex: '#FFFFFF' },
-                { label: 'Green', hex: '#22C55E' }
+            categories: ['Popular', 'New'],
+            variants: [
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 38, quantity: 6 },
+                { color: { label: 'White', hex: '#FFFFFF' }, size: 40, quantity: 9 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 38, quantity: 4 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 40, quantity: 11 }
             ],
-            sizes: [38, 39, 40, 41, 42, 43],
             price: 120,
-            stock: 35,
             status: 'Active'
         },
         {
@@ -74,14 +116,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Chuck 70 High',
             brand: 'Converse',
-            category: 'New',
-            colors: [
-                { label: 'Brown', hex: '#92400E' },
-                { label: 'Black', hex: '#000000' }
+            categories: ['New', 'Trending'],
+            variants: [
+                { color: { label: 'Brown', hex: '#92400E' }, size: 37, quantity: 2 },
+                { color: { label: 'Brown', hex: '#92400E' }, size: 39, quantity: 5 },
+                { color: { label: 'Black', hex: '#000000' }, size: 37, quantity: 4 },
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 8 }
             ],
-            sizes: [37, 38, 39, 40, 41, 42],
             price: 85,
-            stock: 64,
             status: 'Active'
         },
         {
@@ -89,14 +131,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Suede Classic',
             brand: 'Puma',
-            category: 'Trending',
-            colors: [
-                { label: 'Green', hex: '#22C55E' },
-                { label: 'Blue', hex: '#3B82F6' }
+            categories: ['Trending', 'Popular'],
+            variants: [
+                { color: { label: 'Green', hex: '#22C55E' }, size: 38, quantity: 7 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 41, quantity: 9 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 38, quantity: 6 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 41, quantity: 10 }
             ],
-            sizes: [38, 39, 40, 41, 42, 43, 44],
             price: 75,
-            stock: 52,
             status: 'Active'
         },
         {
@@ -104,14 +146,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
-            category: 'Trending',
-            colors: [
-                { label: 'Black', hex: '#000000' },
-                { label: 'Gray', hex: '#6B7280' }
+            categories: ['Best Seller', 'Trending'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 40, quantity: 13 },
+                { color: { label: 'Black', hex: '#000000' }, size: 42, quantity: 14 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 40, quantity: 11 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 42, quantity: 9 }
             ],
-            sizes: [39, 40, 41, 42, 43, 44],
             price: 160,
-            stock: 21,
             status: 'Active'
         },
         {
@@ -119,14 +161,14 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex',
             name: 'Suede Classic',
             brand: 'Puma',
-            category: 'Trending',
-            colors: [
-                { label: 'Green', hex: '#22C55E' },
-                { label: 'Blue', hex: '#3B82F6' }
+            categories: ['Trending', 'Freeship'],
+            variants: [
+                { color: { label: 'Green', hex: '#22C55E' }, size: 39, quantity: 8 },
+                { color: { label: 'Green', hex: '#22C55E' }, size: 42, quantity: 6 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 39, quantity: 5 },
+                { color: { label: 'Blue', hex: '#3B82F6' }, size: 42, quantity: 7 }
             ],
-            sizes: [38, 39, 40, 41, 42, 43, 44],
             price: 75,
-            stock: 52,
             status: 'Active'
         },
         {
@@ -134,25 +176,26 @@ const AdminProducts = () => {
             image: 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_500,h_500/global/312587/01/sv01/fnd/VNM/fmt/png/Darter-Pro-2-Running-Shoes-Unisex', 
             name: 'Gel-Kayano 30',
             brand: 'ASICS',
-            category: 'Trending',
-            colors: [
-                { label: 'Black', hex: '#000000' },
-                { label: 'Gray', hex: '#6B7280' }
+            categories: ['Popular', 'Best Seller'],
+            variants: [
+                { color: { label: 'Black', hex: '#000000' }, size: 39, quantity: 12 },
+                { color: { label: 'Black', hex: '#000000' }, size: 43, quantity: 15 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 39, quantity: 10 },
+                { color: { label: 'Gray', hex: '#6B7280' }, size: 43, quantity: 8 }
             ],
-            sizes: [39, 40, 41, 42, 43, 44],
             price: 160,
-            stock: 21,
             status: 'Active'
         },
     ]), []);
 
     // Filter products based on search term
     const filteredProducts = useMemo(() => {
-        return searchTerm.trim()
+        const term = searchTerm.trim().toLowerCase();
+        return term
             ? products.filter(product =>
-                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                product.category.toLowerCase().includes(searchTerm.toLowerCase())
+                product.name.toLowerCase().includes(term) ||
+                product.brand.toLowerCase().includes(term) ||
+                product.categories.some(c => c.toLowerCase().includes(term))
             )
             : products;
     }, [searchTerm, products]);
@@ -189,33 +232,6 @@ const AdminProducts = () => {
     return <>
         <AdminHeader title="Products" subtitle='Manage your product inventory' />
         <section className="px-9 py-11">
-            {showProductForm ? (
-                <div className="max-w-5xl mx-auto">
-                    <ProductForm
-                        mode={editingProduct ? 'edit' : 'create'}
-                        productId={editingProduct?.id}
-                        productName={editingProduct?.name}
-                        brand={editingProduct?.brand}
-                        price={editingProduct?.price}
-                        stock={editingProduct?.stock}
-                        category={editingProduct?.category}
-                        status={editingProduct?.status}
-                        images={editingProduct ? [editingProduct.image] : []}
-                        selectedColors={editingProduct ? editingProduct.colors.map(c => c.label) : undefined}
-                        selectedSizes={editingProduct ? editingProduct.sizes.map(size => size.toString()) : undefined}
-                        onCancel={() => {
-                            setShowProductForm(false);
-                            setEditingProduct(null);
-                        }}
-                        onSubmit={(data: ProductFormData) => {
-                            console.log('Product form submitted:', data);
-                            setShowProductForm(false);
-                            setEditingProduct(null);
-                        }}
-                    />
-                </div>
-            ) : (
-            <>
             <div className="flex flex-wrap items-center gap-6 justify-between">
                 <div className="flex-1 min-w-[320px] max-w-3xl">
                     <label className="flex items-center gap-3 bg-white border border-neutral-300 rounded-xl px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500 transition">
@@ -274,27 +290,54 @@ const AdminProducts = () => {
                 </div>
             </div>
 
-            <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="mt-10 bg-white rounded-2xl shadow-sm border border-neutral-200">
+                <div className="overflow-x-auto overflow-y-visible">
                     <table className="min-w-full">
                         <thead>
                             <tr className="text-left text-neutral-500 text-lg font-semibold border-b border-neutral-200">
                                 <th className="py-4 px-6">Product</th>
                                 <th className="py-4 px-6">Brand</th>
-                                <th className="py-4 px-6">Category</th>
+                                <th className="py-4 px-6">Categories</th>
                                 <th className="py-4 px-6">Colors</th>
                                 <th className="py-4 px-6">Sizes</th>
                                 <th className="py-4 px-6 text-right">Price</th>
-                                <th className="py-4 px-6">Stock</th>
+                                <th className="py-4 px-6 text-center">Quantity</th>
                                 <th className="py-4 px-6">Status</th>
                                 <th className="py-4 px-6"></th>
                             </tr>
                         </thead>
-                        <tbody className="text-neutral-900 text-base">
+                        <tbody className="text-neutral-900 text-base overflow-visible">
+                            {isLoading && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        <div className="flex justify-center items-center gap-2">
+                                            <svg className="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Loading products...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            {isError && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-red-600">
+                                        Error loading products: {error instanceof Error ? error.message : 'Unknown error'}
+                                    </td>
+                                </tr>
+                            )}
+                            {!isLoading && !isError && paginatedProducts.length === 0 && (
+                                <tr>
+                                    <td colSpan={9} className="py-12 text-center text-neutral-500">
+                                        No products found
+                                    </td>
+                                </tr>
+                            )}
                             {paginatedProducts.map((product) => {
                                 const isActive = product.status === 'Active';
                                 return (
-                                    <tr key={product.id} className="border-b border-neutral-200 last:border-b-0">
+                                    <tr key={product.id} className="border-b border-neutral-200 last:border-b-0 relative">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
                                                 <img src={product.image} alt={product.name} className="w-14 h-14 object-contain rounded-lg border border-neutral-200 bg-neutral-50" />
@@ -303,29 +346,36 @@ const AdminProducts = () => {
                                         </td>
                                         <td className="py-4 px-6 font-medium text-neutral-800">{product.brand}</td>
                                         <td className="py-4 px-6">
-                                            <span className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded-full inline-flex text-sm font-medium">{product.category}</span>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {product.colors.map((color) => (
-                                                    <div key={color.label} className="flex items-center gap-2 px-2 py-1 rounded-full border border-neutral-200">
-                                                        <span className="w-4 h-4 rounded-full" style={{ backgroundColor: color.hex }} />
-                                                        <span className="text-sm text-neutral-700">{color.label}</span>
-                                                    </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {product.categories.map((cat) => (
+                                                    <span key={cat} className="bg-neutral-200 text-neutral-700 px-4 py-2 rounded-full inline-flex text-sm font-medium">{cat}</span>
                                                 ))}
                                             </div>
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                {product.sizes.map((size) => (
+                                                {Array.from(new Set(product.variants.map(v => v.color.label))).map((colorLabel) => {
+                                                    const colorObj = product.variants.find(v => v.color.label === colorLabel)?.color;
+                                                    return colorObj ? (
+                                                        <div key={colorLabel} className="flex items-center gap-2 px-2 py-1 rounded-full border border-neutral-200">
+                                                            <span className="w-4 h-4 rounded-full" style={{ backgroundColor: colorObj.hex }} />
+                                                            <span className="text-sm text-neutral-700">{colorLabel}</span>
+                                                        </div>
+                                                    ) : null;
+                                                })}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {Array.from(new Set(product.variants.map(v => v.size))).map((size) => (
                                                     <span key={size} className="px-3 py-1 rounded-full border border-neutral-300 text-sm font-medium text-neutral-700">
                                                         {size}
                                                     </span>
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(product.price * 1000).toLocaleString()}₫</td>
-                                        <td className="py-4 px-6 text-neutral-800">{product.stock}</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{product.price.toLocaleString()}₫</td>
+                                        <td className="py-4 px-6 font-semibold text-neutral-900 text-center">{product.variants.reduce((total, v) => total + v.quantity, 0)}</td>
                                         <td className="py-4 px-6">
                                             <span className={`${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{product.status}</span>
                                         </td>
@@ -345,7 +395,7 @@ const AdminProducts = () => {
                                                 </button>
 
                                                 {openMenu === product.name && (
-                                                    <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
+                                                    <div className="absolute right-0 bottom-full mb-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-40 overflow-hidden">
                                                         <button
                                                             type="button"
                                                             onClick={() => {
@@ -431,9 +481,34 @@ const AdminProducts = () => {
                     </svg>
                 </button>
             </div>
-            </>
-            )}
         </section>
+
+        {showProductForm && (
+            <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto flex items-start justify-center py-8">
+                <div className="w-full max-w-5xl">
+                    <ProductForm
+                        mode={editingProduct ? 'edit' : 'create'}
+                        productId={editingProduct?.id}
+                        productName={editingProduct?.name}
+                        brand={editingProduct?.brand}
+                        price={editingProduct?.price}
+                        categories={editingProduct?.categories}
+                        status={editingProduct?.status}
+                        images={editingProduct ? [editingProduct.image] : []}
+                        variants={editingProduct?.variants}
+                        onCancel={() => {
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                        onSubmit={(data: ProductFormData) => {
+                            console.log('Product form submitted:', data);
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                    />
+                </div>
+            </div>
+        )}
 
         {deleteProduct && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

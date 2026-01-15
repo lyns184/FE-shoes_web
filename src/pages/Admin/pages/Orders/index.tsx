@@ -30,16 +30,16 @@ const AdminOrder = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   const orders = useMemo<Order[]>(() => ([
-    { id: 'ORD-001', customer: { name: 'John Doe', email: 'john@example.com' }, items: 2, total: 642, status: 'Delivered', date: '15-01-2024' },
-    { id: 'ORD-002', customer: { name: 'Jane Smith', email: 'jane@example.com' }, items: 1, total: 189, status: 'Processing', date: '15-01-2024' },
-    { id: 'ORD-003', customer: { name: 'Bob Wilson', email: 'bob@example.com' }, items: 3, total: 435, status: 'Shipping', date: '14-01-2024' },
-    { id: 'ORD-004', customer: { name: 'Alice Brown', email: 'alice@example.com' }, items: 1, total: 456, status: 'Delivered', date: '14-01-2024' },
-    { id: 'ORD-005', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-006', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-007', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-008', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-009', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-010', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-001', customer: { name: 'John Doe', email: 'john@example.com' }, items: 2, total: 642000, status: 'Delivered', date: '15-01-2024' },
+    { id: 'ORD-002', customer: { name: 'Jane Smith', email: 'jane@example.com' }, items: 1, total: 189000, status: 'Processing', date: '15-01-2024' },
+    { id: 'ORD-003', customer: { name: 'Bob Wilson', email: 'bob@example.com' }, items: 3, total: 435000, status: 'Shipping', date: '14-01-2024' },
+    { id: 'ORD-004', customer: { name: 'Alice Brown', email: 'alice@example.com' }, items: 1, total: 456000, status: 'Delivered', date: '14-01-2024' },
+    { id: 'ORD-005', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-006', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-007', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-008', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-009', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
+    { id: 'ORD-010', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
   ]), []);
 
   const filteredOrders = useMemo(() => {
@@ -48,7 +48,8 @@ const AdminOrder = () => {
       const matchesTerm = term
         ? order.id.toLowerCase().includes(term) ||
           order.customer.name.toLowerCase().includes(term) ||
-          order.customer.email.toLowerCase().includes(term)
+          order.customer.email.toLowerCase().includes(term) ||
+          order.status.toLowerCase().includes(term)
         : true;
       const matchesStatus = statusFilter === 'All' ? true : order.status === statusFilter;
       return matchesTerm && matchesStatus;
@@ -163,7 +164,7 @@ const AdminOrder = () => {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-neutral-800">{order.items}</td>
-                    <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{(order.total * 1000).toLocaleString()}₫</td>
+                    <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{order.total.toLocaleString()}₫</td>
                     <td className="py-4 px-6">
                       <span className={`${STATUS_STYLES[order.status]} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{order.status}</span>
                     </td>
@@ -298,7 +299,7 @@ const AdminOrder = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      console.log('Order cancelled:', cancelingOrderId);
+
                       setCancelingOrderId(null);
                     }}
                     className="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors cursor-pointer"
@@ -317,7 +318,6 @@ const AdminOrder = () => {
             currentStatus={orders.find(o => o.id === updatingOrderId)?.status}
             onCancel={() => setUpdatingOrderId(null)}
             onUpdate={(status) => {
-              console.log('Order status updated:', updatingOrderId, 'to', status);
               setUpdatingOrderId(null);
             }}
           />

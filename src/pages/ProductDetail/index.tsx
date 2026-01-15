@@ -103,18 +103,31 @@ export default function ProductDetail() {
     : null;
 
   // Helper function to find productVariantID from size + color
-  const getProductVariantID = (size: number, colorName: string): number | undefined => {
+  const getProductVariantID = (size: number | null, colorName: string | null): number | undefined => {
+    if (!size || !colorName) return undefined;
     const variant = productVariants.find(
       (v: any) => v.size === size && v.color.name === colorName
     );
     return variant?.id;
   };
 
-  const [selectedSize, setSelectedSize] = useState(productData?.sizes?.[0] || 36);
-  const [selectedColor, setSelectedColor] = useState(productData?.colors?.[0]?.label || 'Black');
+  // Helper function to get quantity for selected variant
+  const getSelectedVariantQuantity = (): number => {
+    if (!selectedSize || !selectedColor) return 0;
+    const variant = productVariants.find(
+      (v: any) => v.size === selectedSize && v.color.name === selectedColor
+    );
+    return variant?.quantity || 0;
+  };
+
+  const [selectedSize, setSelectedSize] = useState<number | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [showProductDetails, setShowProductDetails] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  // Get current variant quantity
+  const availableQuantity = getSelectedVariantQuantity();
 
   if (isLoadingProduct) {
     return (
@@ -242,6 +255,27 @@ export default function ProductDetail() {
               </div>
             </div>
 
+            {/* Available Quantity - Only show after size and color selected */}
+            {productVariants.length > 0 && selectedSize && selectedColor && (
+              <div className="border border-gray-300 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-600">Available Quantity</p>
+                    <p className="text-sm font-semibold text-[#396254]">
+                      {availableQuantity > 0 ? `${availableQuantity} in stock` : 'Out of stock'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Size: {selectedSize}</p>
+                    <p className="text-xs text-gray-500">Color: {selectedColor}</p>
+                  </div>
+                </div>
+                {availableQuantity <= 5 && availableQuantity > 0 && (
+                  <p className="text-orange-600 text-xs mt-1 font-medium">Only {availableQuantity} left!</p>
+                )}
+              </div>
+            )}
+
             {/* Price and Actions */}
             <div className="border border-gray-300 rounded-lg p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -263,8 +297,14 @@ export default function ProductDetail() {
                       alert('Vui lòng chọn màu giày!');
                       return;
                     }
+                    
+                    // Check available quantity
+                    if (availableQuantity <= 0) {
+                      alert('Sản phẩm này đã hết hàng!');
+                      return;
+                    }
 
-                    if (productData && !isAddingToCart) {
+                    if (productData && !isAddingToCart && selectedSize && selectedColor) {
                       setIsAddingToCart(true);
                       const productVariantID = getProductVariantID(selectedSize, selectedColor);
                       
@@ -292,10 +332,10 @@ export default function ProductDetail() {
                       setTimeout(() => setIsAddingToCart(false), 300);
                     }
                   }}
-                  disabled={isAddingToCart}
+                  disabled={isAddingToCart || availableQuantity <= 0}
                   className="flex-1 border-2 border-gray-300 hover:bg-gray-50 bg-transparent py-3 rounded-md font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAddingToCart ? 'Adding...' : 'Add To Cart'}
+                  {isAddingToCart ? 'Adding...' : availableQuantity <= 0 ? 'Out of Stock' : 'Add To Cart'}
                 </button>
                 <button 
                   onClick={() => {
@@ -308,8 +348,14 @@ export default function ProductDetail() {
                       alert('Vui lòng chọn màu giày!');
                       return;
                     }
+                    
+                    // Check available quantity
+                    if (availableQuantity <= 0) {
+                      alert('Sản phẩm này đã hết hàng!');
+                      return;
+                    }
 
-                    if (productData && setBuyNowItem) {
+                    if (productData && setBuyNowItem && selectedSize && selectedColor) {
                       const productVariantID = getProductVariantID(selectedSize, selectedColor);
                       
                       setBuyNowItem({
@@ -327,9 +373,14 @@ export default function ProductDetail() {
                       navigate('/checkout');
                     }
                   }}
-                  className="flex-1 bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-md font-medium cursor-pointer"
+                  disabled={availableQuantity <= 0}
+                  className={`flex-1 py-3 rounded-md font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                    availableQuantity <= 0 
+                      ? 'bg-gray-400 text-gray-200' 
+                      : 'bg-[#396254] hover:bg-[#2d4d3f] text-white'
+                  }`}
                 >
-                  Buy Now
+                  {availableQuantity <= 0 ? 'Out of Stock' : 'Buy Now'}
                 </button>
               </div>
             </div>

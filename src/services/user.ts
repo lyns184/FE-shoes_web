@@ -1,3 +1,6 @@
+import api from '../api/axios';
+import Token from '../utlis/Token';
+const API_BASE_URL = 'https://backend_test_api.nport.link/api';
 import axiosInstance from './axiosInstance';
 import { API_ENDPOINTS } from '../config/api.config';
 
@@ -68,11 +71,9 @@ export interface ApiResponse {
 
 export async function getUserProfile(): Promise<UserProfileResponse> {
   try {
-    console.log('Fetching user profile from server...');
     const response = await axiosInstance.get(API_ENDPOINTS.USER.PROFILE);
 
     if (response.data.success && response.data.data) {
-      console.log('User profile fetched successfully:', response.data.data);
       // Cache profile data
       localStorage.setItem('userProfile', JSON.stringify(response.data.data));
       return response.data;
@@ -80,14 +81,9 @@ export async function getUserProfile(): Promise<UserProfileResponse> {
     
     throw new Error('Invalid response format from server');
   } catch (error: any) {
-    console.error('❌ Failed to fetch profile from server');
-    console.error('Request URL:', API_ENDPOINTS.USER.PROFILE);
-    console.error('Error:', error.response?.data || error.message);
-    
     // Try to use cached profile
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
-      console.warn('Using cached profile data from previous request');
       try {
         const cachedData = JSON.parse(savedProfile);
         return {
@@ -96,7 +92,6 @@ export async function getUserProfile(): Promise<UserProfileResponse> {
           message: 'Using cached data - server unavailable',
         };
       } catch (parseError) {
-        console.error('Failed to parse cached profile');
       }
     }
     
@@ -110,11 +105,9 @@ export async function getUserProfile(): Promise<UserProfileResponse> {
 
 export async function updateUserProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
   try {
-    console.log('Updating user profile data...');
     const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_PROFILE, data);
 
     if (response.data.success && response.data.data) {
-      console.log('User profile updated successfully');
       // Update cached profile
       localStorage.setItem('userProfile', JSON.stringify(response.data.data));
       return response.data;
@@ -122,9 +115,6 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<Update
     
     throw new Error('Invalid response format from server');
   } catch (error: any) {
-    console.error('❌ Failed to update profile');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to update profile. Please try again.',
@@ -143,8 +133,6 @@ export interface UpdateAvatarResponse {
 
 export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarResponse> {
   try {
-    console.log('Updating user avatar...');
-    
     const formData = new FormData();
     formData.append('avatar', avatarFile);
     
@@ -155,15 +143,11 @@ export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarRe
     });
 
     if (response.data.success) {
-      console.log('User avatar updated successfully');
       return response.data;
     }
     
     throw new Error('Invalid response format from server');
   } catch (error: any) {
-    console.error('❌ Failed to update avatar');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to update avatar. Please try again.',
@@ -173,7 +157,6 @@ export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarRe
 
 export async function getUserOrders(page?: number, limit?: number): Promise<OrdersResponse> {
   try {
-    console.log('Fetching user orders from server...');
     // Changed from /api/user/orders to /api/order (user's orders)
     const response = await axiosInstance.get(API_ENDPOINTS.ORDER.BASE, {
       params: {
@@ -183,7 +166,6 @@ export async function getUserOrders(page?: number, limit?: number): Promise<Orde
     });
 
     if (response.data.success) {
-      console.log(`Retrieved ${response.data.data?.length || 0} user orders`);
       return {
         success: true,
         data: {
@@ -194,9 +176,6 @@ export async function getUserOrders(page?: number, limit?: number): Promise<Orde
     
     throw new Error('Invalid response format from server');
   } catch (error: any) {
-    console.error('❌ Failed to fetch orders');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       data: {

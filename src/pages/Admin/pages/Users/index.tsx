@@ -307,7 +307,6 @@ const AdminUser = () => {
             setEditingUser(null);
           }}
           onSubmit={(data: UserFormData) => {
-            console.log('User form submitted:', data);
             setShowUserForm(false);
             setEditingUser(null);
           }}

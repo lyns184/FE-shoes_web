@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, type ReactNode, useEffect, useCallback } from 'react';
 import type { CartItem } from '../types/cart';
-import { getUserProfile, updateUserProfile, getUserOrders, updateUserAvatar } from '../services/user';
-import { checkAuth } from '../services/auth';
+import { getUserProfile, updateUserProfile, getUserOrders } from '../services/user';
+import checkLogin from '../utlis/checkLogin';
+import { updateUserAvatar } from '../services/user';
 
 export interface DeliveryInfo {
   firstName: string;
@@ -56,9 +57,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch profile on mount if authenticated
+  // Fetch profile on mount if logged in
   const refreshProfile = async () => {
-    if (!checkAuth()) {
+    if (!checkLogin()) {
+      // User not logged in
+      setProfile(null);
+      setOrders([]);
       setIsLoading(false);
       setError('Not authenticated');
       return;
@@ -81,30 +85,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setError(null);
       } else {
         setError(result.message || 'Failed to load profile');
-        console.warn('Profile fetch unsuccessful:', result.message);
       }
     } catch (err) {
       const errorMsg = 'Failed to fetch profile';
       setError(errorMsg);
-      console.error(errorMsg, err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch orders
   const refreshOrders = async () => {
-    if (!checkAuth()) return;
+    if (!checkLogin()) {
+      setOrders([]);
+      return;
+    }
 
     try {
       const result = await getUserOrders();
       if (result.success && result.data.orders) {
         setOrders(result.data.orders);
       } else {
-        console.warn('Orders fetch unsuccessful:', result.message);
+        // Orders fetch unsuccessful
       }
     } catch (err) {
-      console.error('Failed to fetch orders:', err);
+      setOrders([]);
     }
   };
 
@@ -112,6 +116,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
     refreshProfile();
     refreshOrders();
   }, []);
+
+  // Listen for authentication changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // Re-check authentication when storage changes
+      refreshProfile();
+      refreshOrders();
+    };
+
+    // Listen for custom auth events
+    window.addEventListener('authChanged', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('authChanged', handleStorageChange);
+    };
+  }, []); // Empty dependency để chỉ chạy một lần
 
   const addOrder = (newOrder: Omit<Order, 'id' | 'date' | 'status'>) => {
     const order: Order = {
@@ -190,7 +210,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         // Use functional update to avoid stale closure
         setProfile(prevProfile => {
           if (!prevProfile) return null;
-          console.log('Updating profile avatar from:', prevProfile.avatar, 'to:', avatarUrl);
+
           return {
             ...prevProfile,
             avatar: avatarUrl
@@ -203,14 +223,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return true;
       } else {
         const errorMsg = result.message || 'Failed to update avatar - no URL returned';
-        console.error('Avatar update failed:', result);
         setError(errorMsg);
         return false;
       }
     } catch (err) {
       const errorMsg = 'Failed to update avatar';
       setError(errorMsg);
-      console.error(errorMsg, err);
       return false;
     }
   };
@@ -234,7 +252,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const clearAll = () => {
-    console.log('🗑️ Clearing user context...');
     setProfile(null);
     setOrders([]);
     setError(null);

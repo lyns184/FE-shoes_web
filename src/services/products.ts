@@ -86,19 +86,14 @@ export interface SearchProductsResponse {
 // API Functions
 export async function getProducts(params?: GetProductsParams): Promise<GetProductsResponse> {
   try {
-    console.log('Fetching products from API...');
     const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.BASE, { params });
     
     if (response.data.success) {
-      console.log(`✅ Fetched ${response.data.data?.length || 0} products`);
       return response.data;
     }
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    console.error('❌ Failed to fetch products');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to fetch products',
@@ -108,19 +103,14 @@ export async function getProducts(params?: GetProductsParams): Promise<GetProduc
 
 export async function getProductById(id: number): Promise<GetProductDetailResponse> {
   try {
-    console.log(`Fetching product ${id} from API...`);
     const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.DETAIL(id));
     
     if (response.data.success) {
-      console.log('Product retrieved successfully');
       return response.data;
     }
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    console.error('❌ Failed to fetch product');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Product not found',
@@ -130,21 +120,16 @@ export async function getProductById(id: number): Promise<GetProductDetailRespon
 
 export async function searchProducts(query: string): Promise<SearchProductsResponse> {
   try {
-    console.log(`🔍 Searching products: "${query}"...`);
     const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.SEARCH, {
       params: { query },
     });
     
     if (response.data.success) {
-      console.log(`Retrieved ${response.data.data?.length || 0} matching products`);
       return response.data;
     }
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    console.error('❌ Search failed');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Search failed',
@@ -154,19 +139,14 @@ export async function searchProducts(query: string): Promise<SearchProductsRespo
 
 export async function getProductDetail(productId: number): Promise<GetProductDetailResponse> {
   try {
-    console.log(`Fetching product detail for ID ${productId}...`);
     const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.DETAIL(productId));
     
     if (response.data.success) {
-      console.log(`✅ Fetched product detail`);
       return response.data;
     }
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    console.error(`❌ Failed to fetch product detail for ID ${productId}`);
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Product not found',
@@ -176,19 +156,14 @@ export async function getProductDetail(productId: number): Promise<GetProductDet
 
 export async function getProductsByBrand(brandID: number): Promise<GetProductsResponse> {
   try {
-    console.log(`Fetching products for brand ${brandID}...`);
     const response = await axiosInstance.get(API_ENDPOINTS.PRODUCT.BY_BRAND(brandID));
     
     if (response.data.success) {
-      console.log(`✅ Fetched ${response.data.data?.length || 0} products`);
       return response.data;
     }
     
     throw new Error('Invalid response format');
   } catch (error: any) {
-    console.error('❌ Failed to fetch products by brand');
-    console.error('Error:', error.response?.data || error.message);
-    
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to fetch products',

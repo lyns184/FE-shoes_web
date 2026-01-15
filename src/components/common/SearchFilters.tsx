@@ -32,9 +32,21 @@ export function SearchFilters({ onFilterChange, className = '' }: SearchFiltersP
   
   const colors = [
     { name: 'Black', color: '#000000' },
-    { name: 'Red', color: '#ef4444' },
-    { name: 'Green', color: '#22c55e' },
-    { name: 'Cyan', color: '#06b6d4' },
+    { name: 'White', color: '#FFFFFF' },
+    { name: 'Red', color: '#FF0000' },
+    { name: 'Blue', color: '#0000FF' },
+    { name: 'Green', color: '#00FF00' },
+    { name: 'Yellow', color: '#FFFF00' },
+    { name: 'Brown', color: '#8B4513' },
+    { name: 'Gray', color: '#808080' },
+    { name: 'Pink', color: '#FFC0CB' },
+    { name: 'Orange', color: '#FFA500' },
+    { name: 'Purple', color: '#800080' },
+    { name: 'Navy Blue', color: '#000080' },
+    { name: 'Gold', color: '#FFD700' },
+    { name: 'Silver', color: '#C0C0C0' },
+    { name: 'Beige', color: '#F5F5DC' },
+    { name: 'Maroon', color: '#800000' }
   ];
 
   const sizes = ['38', '39', '40', '41', '42', '43', '44', '45'];
@@ -171,13 +183,13 @@ export function SearchFilters({ onFilterChange, className = '' }: SearchFiltersP
             {expandedSections.color ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
           </button>
           {expandedSections.color && (
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 flex-wrap">
               {colors.map((c) => (
                 <button
                   key={c.name}
                   onClick={() => handleColorChange(c.name)}
-                  className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                    selectedColors.includes(c.name) ? 'border-gray-800 ring-2 ring-gray-300' : 'border-gray-300'
+                  className={`w-6 h-6 rounded-full border transition-all hover:scale-110 ${
+                    selectedColors.includes(c.name) ? 'border-gray-800 ring-1 ring-gray-400' : 'border-gray-300'
                   }`}
                   style={{ backgroundColor: c.color }}
                   title={c.name}

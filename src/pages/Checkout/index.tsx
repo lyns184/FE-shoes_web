@@ -115,7 +115,6 @@ export default function Checkout() {
       // Display order confirmation modal via URL parameter
       setSearchParams({ orderConfirmed: 'true' });
     } catch (error: any) {
-      console.error('Failed to place order:', error);
       alert(error.message || 'Failed to place order. Please try again.');
     }
   };

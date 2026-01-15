@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import { API_CONFIG } from '../config/api.config';
-import { getAccessToken, refreshAccessToken, clearTokens } from './token';
+import Token from '../utlis/Token';
+import { refreshAccessToken } from './auth';
 
 // Tạo axios instance
 const axiosInstance: AxiosInstance = axios.create(API_CONFIG);
@@ -28,25 +29,16 @@ const processQueue = (error: AxiosError | null, token: string | null = null) => 
 // Request Interceptor - Thêm token vào header
 axiosInstance.interceptors.request.use(
   (config: any) => {
-    const token = getAccessToken();
+    const token = Token.getAccessToken();
     if (token) {
       const authHeader = `Bearer ${token}`;
-      
-      // Debug logging
-      console.log('🔑 Token info:', {
-        length: token.length,
-        preview: token.substring(0, 20) + '...',
-        hasBearer: token.toLowerCase().includes('bearer'),
-        hasQuotes: token.includes('"'),
-      });
-      console.log('📤 Authorization header:', authHeader.substring(0, 40) + '...');
       
       config.headers = {
         ...config.headers,
         Authorization: authHeader,
       };
     } else {
-      console.warn('No access token available for request authentication');
+      // No access token available for request authentication
     }
     return config;
   },
@@ -103,7 +95,7 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         // Refresh token thất bại, logout người dùng
-        clearTokens();
+        Token.clearAllTokens();
         localStorage.removeItem('userProfile');
 
         processQueue(refreshError as AxiosError, null);

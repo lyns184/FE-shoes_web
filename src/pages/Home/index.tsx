@@ -110,7 +110,7 @@ export default function Home() {
             title="Recommend For You" 
             showInfo 
             actionText="See All"
-            onActionClick={() => navigate('/trending')}
+            onActionClick={() => navigate('/search')}
           />
           {isLoadingProducts ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -253,17 +253,60 @@ export default function Home() {
             actionText="See All"
             onActionClick={() => navigate('/new')}
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {newReleases.map((release) => (
-              <ReleaseCard 
-                key={release.id} 
-                id={release.id} 
-                date="Dec 12" 
-                name={release.name} 
-                imageUrl={release.image} 
-              />
-            ))}
-          </div>
+          {isLoadingNew ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {[...Array(4)].map((_, index) => (
+                <Skeleton key={index} className="h-80 rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {displayNew.map((product) => {
+                const getCategoryDisplay = (category: string) => {
+                  switch(category) {
+                    case 'trending': return 'Trending';
+                    case 'best-seller': return 'Best Seller';
+                    case 'freeship': return 'Free Ship';
+                    case 'new': return 'New';
+                    case 'popular': return 'Popular';
+                    default: return category;
+                  }
+                };
+                
+                // Handle both API and local data formats
+                const productData = product.brand 
+                  ? {
+                      id: product.id,
+                      name: product.name,
+                      description: `${product.brand.name || product.brand} - ${Array.isArray(product.category) ? product.category.join(', ') : product.category}`,
+                      price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                      thumbnail: Array.isArray(product.thumbnail) ? product.thumbnail[0]?.url || product.thumbnail[0] : product.thumbnail,
+                      category: Array.isArray(product.category) ? product.category[0] : product.category,
+                    }
+                  : {
+                      id: product.id,
+                      name: product.name,
+                      description: `${product.brand} - ${product.category}`,
+                      price: product.price,
+                      thumbnail: product.image,
+                      category: getCategoryDisplay(product.category),
+                    };
+                
+                return (
+                  <ProductCard 
+                    key={product.id} 
+                    id={productData.id}
+                    name={productData.name}
+                    description={productData.description}
+                    price={productData.price}
+                    thumbnail={productData.thumbnail}
+                    category={productData.category}
+                    freeship={productData.category === 'freeship'}
+                  />
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Sale Products */}
@@ -273,32 +316,60 @@ export default function Home() {
             actionText="See All"
             onActionClick={() => navigate('/deals')}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {saleProducts.map((product) => {
-              const getCategoryDisplay = (category: string) => {
-                switch(category) {
-                  case 'trending': return 'Trending';
-                  case 'best-seller': return 'Best Seller';
-                  case 'freeship': return 'Free Ship';
-                  case 'new': return 'New';
-                  case 'popular': return 'Popular';
-                  default: return category;
-                }
-              };
-              return (
-                <ProductCard 
-                  key={product.id} 
-                  id={product.id}
-                  name={product.name}
-                  description={`${product.brand} - ${product.category}`}
-                  price={product.price}
-                  thumbnail={product.image}
-                  category={getCategoryDisplay(product.category)}
-                  freeship={product.category === 'freeship'}
-                />
-              );
-            })}
-          </div>
+          {isLoadingBestSellers ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {[...Array(4)].map((_, index) => (
+                <Skeleton key={index} className="h-80 rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {displayBestSellers.map((product) => {
+                const getCategoryDisplay = (category: string) => {
+                  switch(category) {
+                    case 'trending': return 'Trending';
+                    case 'best-seller': return 'Best Seller';
+                    case 'freeship': return 'Free Ship';
+                    case 'new': return 'New';
+                    case 'popular': return 'Popular';
+                    default: return category;
+                  }
+                };
+                
+                // Handle both API and local data formats
+                const productData = product.brand 
+                  ? {
+                      id: product.id,
+                      name: product.name,
+                      description: `${product.brand.name || product.brand} - ${Array.isArray(product.category) ? product.category.join(', ') : product.category}`,
+                      price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                      thumbnail: Array.isArray(product.thumbnail) ? product.thumbnail[0]?.url || product.thumbnail[0] : product.thumbnail,
+                      category: Array.isArray(product.category) ? product.category[0] : product.category,
+                    }
+                  : {
+                      id: product.id,
+                      name: product.name,
+                      description: `${product.brand} - ${product.category}`,
+                      price: product.price,
+                      thumbnail: product.image,
+                      category: getCategoryDisplay(product.category),
+                    };
+                
+                return (
+                  <ProductCard 
+                    key={product.id} 
+                    id={productData.id}
+                    name={productData.name}
+                    description={productData.description}
+                    price={productData.price}
+                    thumbnail={productData.thumbnail}
+                    category={productData.category}
+                    freeship={productData.category === 'freeship'}
+                  />
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Info Cards */}
