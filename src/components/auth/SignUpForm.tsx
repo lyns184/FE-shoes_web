@@ -1,17 +1,79 @@
 import { useState } from 'react';
-
+import { register } from '../../services/auth';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 export default function SignUpForm() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     password: '',
+    phone: '',
+    address: '',
     agreedToTerms: false,
   });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const {data , mutateAsync , isPending} = useMutation({
+    mutationFn: async (data : any) => 
+    {
+      const responseData = await register(data) 
+      return responseData
+    }, 
+  })
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
+    const toastID = toast.loading('Signing up...')
+    try {
+      const result = await mutateAsync({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address,
+      });
+      if (result.success) {
+        toast.success(result.message || 'Registration successful! Please check your email.', {
+          id: toastID 
+        })
+        // setSuccess(result.message || 'Registration successful! Please check your email to verify your account.'); 
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          address: '',
+          agreedToTerms: false,
+        });
+      }
+      else {
+        setError(result.message || 'Registration failed. Please try again.');
+      }
+      /*
+      if (result.success) {
+        setSuccess(result.message || 'Registration successful! Please check your email to verify your account.');
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          address: '',
+          agreedToTerms: false,
+        });
+      } else {
+        setError(result.message || 'Registration failed. Please try again.');
+      }   */ 
+    } catch (err) 
+    {
+      setError('An error occurred. Please try again later.');
+    } 
+    finally 
+    {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,24 +86,27 @@ export default function SignUpForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input
-        type="text"
-        name="firstName"
-        placeholder="First Name*"
-        value={formData.firstName}
-        onChange={handleChange}
-        className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
-        required
-      />
+      {error && (
+        <div className="p-3 bg-red-100 border border-red-400 text-red-700 text-sm rounded">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 bg-green-100 border border-green-400 text-green-700 text-sm rounded">
+          {success}
+        </div>
+      )}
 
       <input
         type="text"
-        name="lastName"
-        placeholder="Last Name*"
-        value={formData.lastName}
+        name="name"
+        placeholder="Full Name*"
+        value={formData.name}
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
+        disabled={isPending}
       />
 
       <input
@@ -52,6 +117,29 @@ export default function SignUpForm() {
         onChange={handleChange}
         className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
         required
+        disabled={isPending}
+      />
+
+      <input
+        type="tel"
+        name="phone"
+        placeholder="Phone Number*"
+        value={formData.phone}
+        onChange={handleChange}
+        className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+        required
+        disabled={isPending}
+      />
+
+      <input
+        type="text"
+        name="address"
+        placeholder="Address*"
+        value={formData.address}
+        onChange={handleChange}
+        className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
+        required
+        disabled={isPending}
       />
 
       <div>
@@ -63,6 +151,7 @@ export default function SignUpForm() {
           onChange={handleChange}
           className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:ring-1 focus:ring-gray-400"
           required
+          disabled={isPending}
         />
         <p className="text-xs text-gray-600 mt-2 font-bold">
           At least 12 characters, 1 uppercase letter, 1 number & 1 symbol
@@ -78,6 +167,7 @@ export default function SignUpForm() {
           onChange={handleChange}
           className="mt-1 w-4 h-4 accent-teal-700"
           required
+          disabled={isPending}
         />
         <label htmlFor="terms" className="text-sm text-gray-700 leading-tight">
           I have read and agree to the Terms and Privacy
@@ -86,9 +176,10 @@ export default function SignUpForm() {
 
       <button
         type="submit"
-        className="w-full bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-sm font-medium text-base transition-colors cursor-pointer"
+        disabled={isPending}
+        className="w-full bg-[#396254] hover:bg-[#2d4d3f] text-white py-3 rounded-sm font-medium text-base transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Sign Up
+        {isPending ? 'Signing Up...' : 'Sign Up'}
       </button>
     </form>
   );

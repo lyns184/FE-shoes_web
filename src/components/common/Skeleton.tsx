@@ -1,3 +1,16 @@
+import { HTMLAttributes } from 'react';
+
+interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {}
+
+export default function Skeleton({ className = "", ...props }: SkeletonProps) {
+  return (
+    <div 
+      className={`animate-pulse bg-gray-200 rounded ${className}`} 
+      {...props}
+    />
+  );
+}
+
 export function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden border border-gray-200 rounded-lg bg-white animate-pulse">
