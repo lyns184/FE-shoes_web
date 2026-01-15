@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FiX, FiCamera } from 'react-icons/fi';
 
 export interface UserProfile {
@@ -13,13 +13,15 @@ interface EditProfileModalProps {
   isOpen: boolean;
   profile: UserProfile | null;
   onSave: (profile: Partial<UserProfile>) => Promise<boolean>;
+  onUpdateAvatar?: (file: File) => Promise<boolean>;
   onClose: () => void;
 }
 
 export default function EditProfileModal({ 
   isOpen, 
   profile, 
-  onSave, 
+  onSave,
+  onUpdateAvatar,
   onClose 
 }: EditProfileModalProps) {
   const [formData, setFormData] = useState<UserProfile>(profile || {
@@ -29,7 +31,31 @@ export default function EditProfileModal({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update formData when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        name: profile.name || '',
+        phone: profile.phone || '',
+        email: profile.email || '',
+        address: profile.address || '',
+        avatar: profile.avatar || ''
+      });
+    }
+  }, [profile]);
+
+  // Reset avatar states when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      setError(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen || !profile) return null;
 
@@ -39,9 +65,26 @@ export default function EditProfileModal({
     setError(null);
 
     try {
-      const success = await onSave(formData);
+      // Update avatar first if there's a new avatar file  
+      if (avatarFile && onUpdateAvatar) {
+        const avatarSuccess = await onUpdateAvatar(avatarFile);
+        if (!avatarSuccess) {
+          throw new Error('Failed to update avatar');
+        }
+      }
+
+      // Update profile (excluding avatar since it's handled separately)
+      const profileData = {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address
+      };
+      
+      const success = await onSave(profileData);
       if (success) {
         onClose();
+        setAvatarFile(null);
+        setAvatarPreview(null);
       } else {
         setError('Failed to update profile. Please try again.');
       }
@@ -59,10 +102,14 @@ export default function EditProfileModal({
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Store the file for upload
+      setAvatarFile(file);
+      
+      // Show preview immediately
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64String = event.target?.result as string;
-        handleInputChange('avatar', base64String);
+        setAvatarPreview(base64String);
       };
       reader.readAsDataURL(file);
     }
@@ -87,7 +134,9 @@ export default function EditProfileModal({
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
               <div className="w-20 h-20 bg-[#3d5a4c] rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-                {formData.avatar ? (
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                ) : formData.avatar ? (
                   <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   formData.name.charAt(0).toUpperCase()

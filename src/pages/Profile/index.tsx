@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ORDERS_PER_PAGE = 10;
-  const { profile, orders, isLoading, error, updateProfile, setDefaultShippingAddress, removeDefaultShippingAddress, clearAll } = useUser();
+  const { profile, orders, isLoading, error, updateProfile, updateAvatar, setDefaultShippingAddress, removeDefaultShippingAddress, clearAll } = useUser();
 
   useEffect(() => {
     if (!checkAuth()) {
@@ -78,7 +78,7 @@ export default function ProfilePage() {
         id: item.id,
         name: item.name,
         description: item.description || '',
-        price: item.price,
+        price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : (item.price || 0),
         thumbnail: item.thumbnail || '/shoe.png',
         size: item.size,
         color: item.color,
@@ -89,7 +89,7 @@ export default function ProfilePage() {
           day: 'numeric'
         }),
         status: order.status,
-        orderTotal: order.total
+        orderTotal: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0)
       }));
     }
     // For API format without items, show the order itself
@@ -98,7 +98,7 @@ export default function ProfilePage() {
       id: order.id,
       name: `Order #${order.id}`,
       description: order.status,
-      price: order.total,
+      price: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0),
       thumbnail: '/shoe.png',
       date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -106,7 +106,7 @@ export default function ProfilePage() {
         day: 'numeric'
       }) : 'N/A',
       status: order.status,
-      orderTotal: order.total
+      orderTotal: typeof order.total === 'string' ? parseFloat(order.total) || 0 : (order.total || 0)
     }];
   });
 
@@ -157,9 +157,21 @@ export default function ProfilePage() {
         {/* Sidebar */}
         <aside className="w-full lg:w-56 bg-white border border-gray-200 h-fit rounded-lg">
           <div className="p-4 sm:p-6 border-b border-gray-200 text-center">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#396254] rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold mx-auto mb-2 sm:mb-3">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#396254] rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold mx-auto mb-2 sm:mb-3 overflow-hidden">
               {profile.avatar ? (
-                <img src={profile.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                <img 
+                  key={profile.avatar}
+                  src={profile.avatar} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    console.error('Avatar load error:', profile.avatar);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('Avatar loaded successfully:', profile.avatar);
+                  }}
+                />
               ) : (
                 profile.name.charAt(0).toUpperCase()
               )}
@@ -246,9 +258,21 @@ export default function ProfilePage() {
 
               {/* Avatar and Personal Information */}
               <div className="flex items-start gap-8 mb-8">
-                <div className="w-24 h-24 bg-[#396254] rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0">
+                <div className="w-24 h-24 bg-[#396254] rounded-full flex items-center justify-center text-white text-3xl font-bold shrink-0 overflow-hidden">
                   {profile.avatar ? (
-                    <img src={profile.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img 
+                      key={profile.avatar}
+                      src={profile.avatar} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error('Avatar load error:', profile.avatar);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('Avatar loaded successfully:', profile.avatar);
+                      }}
+                    />
                   ) : (
                     profile.name.charAt(0).toUpperCase()
                   )}
@@ -398,7 +422,9 @@ export default function ProfilePage() {
                               </div>
                             </td>
                             <td className="py-4 px-4 text-gray-700">{item.date}</td>
-                            <td className="py-4 px-4 text-gray-700">${item.price}</td>
+                            <td className="py-4 px-4 text-gray-700">
+                              ${typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}
+                            </td>
                             <td className="py-4 px-4">
                               <span
                                 className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusStyles(
@@ -478,6 +504,7 @@ export default function ProfilePage() {
           isOpen={showEditModal}
           profile={profile}
           onSave={updateProfile}
+          onUpdateAvatar={updateAvatar}
           onClose={() => setShowEditModal(false)}
         />
       )}

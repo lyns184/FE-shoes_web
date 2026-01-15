@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import type { CartItem } from '../types/cart';
-import { getUserProfile, updateUserProfile, getUserOrders } from '../services/user';
+import { getUserProfile, updateUserProfile, getUserOrders, updateUserAvatar } from '../services/user';
 import { checkAuth } from '../services/auth';
 
 export interface DeliveryInfo {
@@ -40,6 +40,7 @@ interface UserContextType {
   error: string | null;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => void;
   updateProfile: (newProfile: Partial<UserProfile>) => Promise<boolean>;
+  updateAvatar: (avatarFile: File) => Promise<boolean>;
   setDefaultShippingAddress: (address: { address: string; postalCode: string }) => void;
   removeDefaultShippingAddress: () => void;
   refreshProfile: () => Promise<void>;
@@ -69,7 +70,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const result = await getUserProfile();
       if (result.success && result.data) {
-        setProfile(result.data);
+        // Add cache-busting to avatar URL if exists
+        const profileData = { ...result.data };
+        if (profileData.avatar) {
+          profileData.avatar = profileData.avatar.includes('?')
+            ? `${profileData.avatar}&t=${Date.now()}`
+            : `${profileData.avatar}?t=${Date.now()}`;
+        }
+        setProfile(profileData);
         setError(null);
       } else {
         setError(result.message || 'Failed to load profile');
@@ -128,7 +136,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const result = await updateUserProfile(newProfile);
       if (result.success && result.data) {
-        setProfile(result.data);
+        // Preserve current avatar URL if we have one with cache-busting timestamp
+        // (avatar from server may be stale after recent upload)
+        setProfile(prevProfile => {
+          const newData = { ...result.data! };
+          // Keep existing avatar if it has cache-busting timestamp (recently updated)
+          if (prevProfile?.avatar && prevProfile.avatar.includes('?t=')) {
+            newData.avatar = prevProfile.avatar;
+          } else if (newData.avatar && !newData.avatar.includes('?t=')) {
+            // Add cache-busting to server avatar
+            newData.avatar = `${newData.avatar}?t=${Date.now()}`;
+          }
+          return newData;
+        });
         return true;
       } else {
         setError(result.message || 'Failed to update profile');
@@ -136,6 +156,59 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       const errorMsg = 'Failed to update profile';
+      setError(errorMsg);
+      console.error(errorMsg, err);
+      return false;
+    }
+  };
+
+  const updateAvatar = async (avatarFile: File): Promise<boolean> => {
+    setError(null);
+    
+    try {
+      const result = await updateUserAvatar(avatarFile);
+      console.log('Avatar upload result:', result);
+      
+      // Check for both possible response formats: result.data.url or result.data.avatar
+      let newAvatarUrl = result.data?.url || result.data?.avatar;
+      
+      if (result.success && newAvatarUrl) {
+        // Ensure Cloudinary URL has proper format
+        if (newAvatarUrl.includes('cloudinary.com') && !newAvatarUrl.includes('/v1/')) {
+          // Fix missing version in Cloudinary URL
+          newAvatarUrl = newAvatarUrl.replace('/image/upload/', '/image/upload/v1/');
+        }
+        
+        // Update profile with new avatar URL (with cache-busting timestamp)
+        const avatarUrl = newAvatarUrl.includes('?') 
+          ? `${newAvatarUrl}&t=${Date.now()}`
+          : `${newAvatarUrl}?t=${Date.now()}`;
+        
+        console.log('Original avatar URL:', result.data?.url || result.data?.avatar);
+        console.log('Fixed avatar URL with cache-busting:', avatarUrl);
+          
+        // Use functional update to avoid stale closure
+        setProfile(prevProfile => {
+          if (!prevProfile) return null;
+          console.log('Updating profile avatar from:', prevProfile.avatar, 'to:', avatarUrl);
+          return {
+            ...prevProfile,
+            avatar: avatarUrl
+          };
+        });
+        
+        // DON'T refresh profile here - it will overwrite our cache-busted URL
+        // The avatar is already updated in state with the correct URL
+        
+        return true;
+      } else {
+        const errorMsg = result.message || 'Failed to update avatar - no URL returned';
+        console.error('Avatar update failed:', result);
+        setError(errorMsg);
+        return false;
+      }
+    } catch (err) {
+      const errorMsg = 'Failed to update avatar';
       setError(errorMsg);
       console.error(errorMsg, err);
       return false;
@@ -176,6 +249,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       error,
       addOrder, 
       updateProfile,
+      updateAvatar,
       setDefaultShippingAddress,
       removeDefaultShippingAddress,
       refreshProfile,

@@ -254,7 +254,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: Math.max(1, buyNowItem.quantity - 1) });
                         } else {
-                          updateQuantity(item.id, item.productID || 0, -1);
+                          updateQuantity(item.id, item.productVariantID || 0, -1, item.quantity);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"
@@ -267,7 +267,7 @@ export default function Checkout() {
                         if (buyNowItem) {
                           setBuyNowItem({ ...buyNowItem, quantity: buyNowItem.quantity + 1 });
                         } else {
-                          updateQuantity(item.id, item.productID || 0, 1);
+                          updateQuantity(item.id, item.productVariantID || 0, 1, item.quantity);
                         }
                       }}
                       className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 cursor-pointer"

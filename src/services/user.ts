@@ -1,6 +1,11 @@
 import axiosInstance from './axiosInstance';
 import { API_ENDPOINTS } from '../config/api.config';
 
+export interface UserRole {
+  userID: number;
+  roleID: number;
+}
+
 export interface UserProfile {
   id: number;
   name: string;
@@ -8,6 +13,9 @@ export interface UserProfile {
   phone: string;
   address: string;
   avatar?: string;
+  userRoles?: UserRole[];
+  createdAt?: string;
+  verify?: boolean;
 }
 
 export interface Order {
@@ -36,7 +44,6 @@ export interface UpdateProfileData {
   name?: string;
   phone?: string;
   address?: string;
-  avatar?: string;
 }
 
 export interface UpdateProfileResponse {
@@ -121,6 +128,45 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<Update
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to update profile. Please try again.',
+    };
+  }
+}
+
+export interface UpdateAvatarResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    avatar: string;
+    url: string;
+  };
+}
+
+export async function updateUserAvatar(avatarFile: File): Promise<UpdateAvatarResponse> {
+  try {
+    console.log('Updating user avatar...');
+    
+    const formData = new FormData();
+    formData.append('avatar', avatarFile);
+    
+    const response = await axiosInstance.patch(API_ENDPOINTS.USER.UPDATE_AVATAR, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    if (response.data.success) {
+      console.log('User avatar updated successfully');
+      return response.data;
+    }
+    
+    throw new Error('Invalid response format from server');
+  } catch (error: any) {
+    console.error('❌ Failed to update avatar');
+    console.error('Error:', error.response?.data || error.message);
+    
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update avatar. Please try again.',
     };
   }
 }

@@ -99,14 +99,14 @@ export default function Cart() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1)}
+                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1, item.quantity)}
                           className="p-1 border border-gray-300 rounded hover:bg-gray-50"
                         >
                           <FiMinus className="w-3 h-3" />
                         </button>
                         <span className="w-8 text-center text-sm">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1)}
+                          onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1, item.quantity)}
                           className="p-1 border border-gray-300 rounded hover:bg-gray-50"
                         >
                           <FiPlus className="w-3 h-3" />
@@ -145,14 +145,14 @@ export default function Cart() {
                     {/* Quantity Controls */}
                     <div className="col-span-2 flex items-center justify-center gap-2">
                       <button
-                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1)}
+                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, -1, item.quantity)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer transition-colors"
                       >
                         <FiMinus className="h-3 w-3" />
                       </button>
                       <span className="text-sm font-medium w-8 text-center bg-gray-50 py-1 px-2 rounded">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1)}
+                        onClick={() => updateQuantity(item.id, item.productVariantID || 0, 1, item.quantity)}
                         className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 cursor-pointer transition-colors"
                       >
                         <FiPlus className="h-3 w-3" />

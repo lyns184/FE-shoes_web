@@ -72,7 +72,8 @@ export function useAddToCart() {
         // Handle localStorage fallback
         const currentCart = queryClient.getQueryData<CartItem[]>(queryKeys.cart.items()) || [];
         const existingIndex = currentCart.findIndex(
-          item => item.productID === newItem.productID
+          item => item.productVariantID === newItem.productVariantID || 
+                  (item.productID === newItem.productID && item.size === newItem.size && item.color === newItem.color)
         );
 
         let updatedCart;
@@ -98,6 +99,7 @@ export function useAddToCart() {
         throw new Error('productVariantID is required to add to cart');
       }
       
+      // Don't send quantity for add to cart - let BE handle increment logic
       const result = await addToCartAPI({ productVariantID });
 
       if (!result.success) {
@@ -178,20 +180,15 @@ export function useUpdateCartQuantity() {
     mutationFn: async ({ 
       cartItemId,
       productVariantID,
-      change 
+      change,
+      currentQuantity // Pass current quantity directly to avoid cache issues
     }: { 
       cartItemId: number;
       productVariantID: number;
-      change: number; 
+      change: number;
+      currentQuantity: number;
     }) => {
-      const currentCart = queryClient.getQueryData<CartItem[]>(queryKeys.cart.items()) || [];
-      const item = currentCart.find(i => i.id === cartItemId);
-      
-      if (!item) {
-        throw new Error('Item not found in cart');
-      }
-
-      const newQuantity = item.quantity + change;
+      const newQuantity = currentQuantity + change;
       
       // If quantity becomes 0 or negative, remove item
       if (newQuantity <= 0) {
@@ -201,6 +198,7 @@ export function useUpdateCartQuantity() {
       // For positive changes, we need to handle the quantity update
       if (!checkAuth()) {
         // Handle localStorage fallback
+        const currentCart = queryClient.getQueryData<CartItem[]>(queryKeys.cart.items()) || [];
         const updatedCart = currentCart.map(cartItem => {
           if (cartItem.id === cartItemId) {
             return { ...cartItem, quantity: newQuantity };
@@ -241,8 +239,12 @@ export function useUpdateCartQuantity() {
         queryClient.setQueryData(queryKeys.cart.items(), context.previousCart);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+    onSuccess: () => {
+      // Refetch cart from server after API call succeeds
+      // Use delay to let BE finish processing
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+      }, 300);
     },
   });
 }
@@ -296,8 +298,8 @@ export function useCart() {
     addToCart: addToCartMutation.mutateAsync,
     removeFromCart: (cartItemId: number) => 
       removeFromCartMutation.mutateAsync({ cartItemId }),
-    updateQuantity: (cartItemId: number, productVariantID: number, change: number) =>
-      updateQuantityMutation.mutateAsync({ cartItemId, productVariantID, change }),
+    updateQuantity: (cartItemId: number, productVariantID: number, change: number, currentQuantity: number) =>
+      updateQuantityMutation.mutateAsync({ cartItemId, productVariantID, change, currentQuantity }),
     clearCart: clearCartMutation.mutateAsync,
     totalItems,
     subtotal,
