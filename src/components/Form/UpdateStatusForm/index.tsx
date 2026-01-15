@@ -1,14 +1,30 @@
 import { useState } from 'react';
 
 interface UpdateStatusFormProps {
-  orderId: string;
-  currentStatus?: 'Processing' | 'Shipping' | 'Delivered' | 'Cancelled';
+  orderId: number;
+  currentStatus?: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled';
   onCancel: () => void;
-  onUpdate: (status: 'Processing' | 'Shipping' | 'Delivered' | 'Cancelled') => void;
+  onUpdate: (status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled') => void;
 }
 
-const UpdateStatusForm = ({ orderId, currentStatus = 'Processing', onCancel, onUpdate }: UpdateStatusFormProps) => {
-  const [selectedStatus, setSelectedStatus] = useState<'Processing' | 'Shipping' | 'Delivered' | 'Cancelled'>(currentStatus);
+const STATUS_DISPLAY_MAP: Record<'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled', string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  shipping: 'Shipping',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+const STATUS_OPTIONS: Array<'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled'> = [
+  'pending',
+  'confirmed',
+  'shipping',
+  'delivered',
+  'cancelled',
+];
+
+const UpdateStatusForm = ({ orderId, currentStatus = 'pending', onCancel, onUpdate }: UpdateStatusFormProps) => {
+  const [selectedStatus, setSelectedStatus] = useState<'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled'>(currentStatus);
 
   const handleUpdate = () => {
     onUpdate(selectedStatus);
@@ -26,13 +42,14 @@ const UpdateStatusForm = ({ orderId, currentStatus = 'Processing', onCancel, onU
             <div className="relative">
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value as 'Processing' | 'Shipping' | 'Delivered' | 'Cancelled')}
+                onChange={(e) => setSelectedStatus(e.target.value as 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled')}
                 className="w-full px-4 py-4 border border-neutral-300 rounded-2xl text-neutral-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none bg-white pr-10"
               >
-                <option value="Processing">Processing</option>
-                <option value="Shipping">Shipping</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_DISPLAY_MAP[status]}
+                  </option>
+                ))}
               </select>
               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                 <svg width="13" height="8" viewBox="0 0 13 8" fill="none" xmlns="http://www.w3.org/2000/svg">

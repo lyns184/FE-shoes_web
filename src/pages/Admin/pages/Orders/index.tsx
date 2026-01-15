@@ -1,55 +1,112 @@
 import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import AdminHeader from '../../../../components/common/AdminHeader';
 import UpdateStatusForm from '../../../../components/Form/UpdateStatusForm';
+import { getAllOrders, updateOrderStatus, type AdminOrder as ApiOrder } from '../../../../services/order';
 
 type Order = {
-  id: string;
+  id: number;
   customer: {
     name: string;
     email: string;
+    phone: string;
   };
   items: number;
   total: number;
-  status: 'Processing' | 'Shipping' | 'Delivered' | 'Cancelled';
-  date: string; // dd-mm-yyyy
+  status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled';
+  date: string;
+  createdAt: string;
 };
 
 const STATUS_STYLES: Record<Order['status'], string> = {
-  Processing: 'bg-amber-100 text-amber-700',
-  Shipping: 'bg-blue-100 text-blue-700',
-  Delivered: 'bg-emerald-100 text-emerald-700',
-  Cancelled: 'bg-red-100 text-red-700',
+  pending: 'bg-gray-100 text-gray-700',
+  confirmed: 'bg-amber-100 text-amber-700',
+  shipping: 'bg-blue-100 text-blue-700',
+  delivered: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
+
+const STATUS_LABELS: Record<Order['status'], string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  shipping: 'Shipping',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 const AdminOrder = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | Order['status']>('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [cancelingOrderId, setCancelingOrderId] = useState<number | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
-  const orders = useMemo<Order[]>(() => ([
-    { id: 'ORD-001', customer: { name: 'John Doe', email: 'john@example.com' }, items: 2, total: 642000, status: 'Delivered', date: '15-01-2024' },
-    { id: 'ORD-002', customer: { name: 'Jane Smith', email: 'jane@example.com' }, items: 1, total: 189000, status: 'Processing', date: '15-01-2024' },
-    { id: 'ORD-003', customer: { name: 'Bob Wilson', email: 'bob@example.com' }, items: 3, total: 435000, status: 'Shipping', date: '14-01-2024' },
-    { id: 'ORD-004', customer: { name: 'Alice Brown', email: 'alice@example.com' }, items: 1, total: 456000, status: 'Delivered', date: '14-01-2024' },
-    { id: 'ORD-005', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-006', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-007', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-008', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-009', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-    { id: 'ORD-010', customer: { name: 'Charlie Davis', email: 'charlie@example.com' }, items: 2, total: 550000, status: 'Cancelled', date: '13-01-2024' },
-  ]), []);
+  const queryClient = useQueryClient();
+
+  // Fetch orders from API
+  const { data: ordersData, isLoading, isError, error } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getAllOrders,
+  });
+
+  // Mutation for updating order status
+  const updateStatusMutation = useMutation({
+    mutationFn: (variables: { orderId: number; status: string }) =>
+      updateOrderStatus(variables.orderId, { status: variables.status }),
+    onSuccess: () => {
+      toast.success('Order status updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      setUpdatingOrderId(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update order status');
+    },
+  });
+
+  // Transform API data to component's Order type
+  const orders = useMemo<Order[]>(() => {
+    if (!ordersData?.success || !ordersData.data) return [];
+    
+    const transformed = ordersData.data.map((apiOrder: ApiOrder) => {
+      // Calculate total from order items
+      const total = apiOrder.orderItems.reduce((sum, item) => {
+        return sum + (parseFloat(item.price) * item.quantity);
+      }, 0);
+
+      // Format date
+      const date = new Date(apiOrder.createdAt).toLocaleDateString('en-GB');
+
+      return {
+        id: apiOrder.id,
+        customer: {
+          name: apiOrder.user.name,
+          email: apiOrder.user.email,
+          phone: apiOrder.user.phone,
+        },
+        items: apiOrder.orderItems.length,
+        total,
+        status: apiOrder.status as Order['status'],
+        date,
+        createdAt: apiOrder.createdAt, // Keep raw date for sorting
+      };
+    });
+
+    // Sort by date (newest first)
+    return transformed.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [ordersData]);
 
   const filteredOrders = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return orders.filter(order => {
       const matchesTerm = term
-        ? order.id.toLowerCase().includes(term) ||
+        ? String(order.id).toLowerCase().includes(term) ||
           order.customer.name.toLowerCase().includes(term) ||
           order.customer.email.toLowerCase().includes(term) ||
-          order.status.toLowerCase().includes(term)
+          STATUS_LABELS[order.status].toLowerCase().includes(term)
         : true;
       const matchesStatus = statusFilter === 'All' ? true : order.status === statusFilter;
       return matchesTerm && matchesStatus;
@@ -131,10 +188,11 @@ const AdminOrder = () => {
               className="min-w-[170px] bg-white border border-neutral-300 rounded-xl px-4 py-3 text-neutral-800 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
             >
               <option value="All">All Status</option>
-              <option value="Processing">Processing</option>
-              <option value="Shipping">Shipping</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipping">Shipping</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </div>
@@ -166,7 +224,7 @@ const AdminOrder = () => {
                     <td className="py-4 px-6 text-neutral-800">{order.items}</td>
                     <td className="py-4 px-6 font-semibold text-neutral-900 text-right whitespace-nowrap">{order.total.toLocaleString()}₫</td>
                     <td className="py-4 px-6">
-                      <span className={`${STATUS_STYLES[order.status]} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{order.status}</span>
+                      <span className={`${STATUS_STYLES[order.status]} px-4 py-2 rounded-full font-semibold text-sm inline-flex`}>{STATUS_LABELS[order.status]}</span>
                     </td>
                     <td className="py-4 px-6 text-neutral-700">{order.date}</td>
                     <td className="py-4 px-6">
@@ -185,7 +243,7 @@ const AdminOrder = () => {
                         </button>
 
                         {openMenu === order.id && (
-                          <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-48 overflow-hidden">
+                          <div className="absolute -left-48 top-1/2 -translate-y-1/2 bg-white rounded-2xl border border-neutral-200 shadow-lg z-50 min-w-48 overflow-hidden">
                             <button
                               type="button"
                               onClick={() => {
@@ -198,19 +256,6 @@ const AdminOrder = () => {
                                 <path d="M16 14.25V1.25H1V14.25H16ZM16 14.25H23V9.25L20 6.25H16V14.25ZM8 16.75C8 18.1307 6.88071 19.25 5.5 19.25C4.11929 19.25 3 18.1307 3 16.75C3 15.3693 4.11929 14.25 5.5 14.25C6.88071 14.25 8 15.3693 8 16.75ZM21 16.75C21 18.1307 19.8807 19.25 18.5 19.25C17.1193 19.25 16 18.1307 16 16.75C16 15.3693 17.1193 14.25 18.5 14.25C19.8807 14.25 21 15.3693 21 16.75Z" stroke="#1E1E1E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                               Update Status
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCancelingOrderId(order.id);
-                                setOpenMenu(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors font-medium text-left cursor-pointer border-t border-neutral-200"
-                            >
-                              <svg width="23" height="23" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M14.25 8.25L8.25 14.25M8.25 8.25L14.25 14.25M21.25 11.25C21.25 16.7728 16.7728 21.25 11.25 21.25C5.72715 21.25 1.25 16.7728 1.25 11.25C1.25 5.72715 5.72715 1.25 11.25 1.25C16.7728 1.25 21.25 5.72715 21.25 11.25Z" stroke="#EC221F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                              Cancel Order
                             </button>
                           </div>
                         )}
@@ -318,8 +363,10 @@ const AdminOrder = () => {
             currentStatus={orders.find(o => o.id === updatingOrderId)?.status}
             onCancel={() => setUpdatingOrderId(null)}
             onUpdate={(status) => {
-              console.log('Order status updated:', updatingOrderId, 'to', status);
-              setUpdatingOrderId(null);
+              updateStatusMutation.mutate({
+                orderId: updatingOrderId,
+                status,
+              });
             }}
           />
         )}
